@@ -580,6 +580,11 @@
      * Switch views with a deal / gather animation: each card flies from where it was
      * to where it ends up (FLIP), one after another.
      */
+    // Layer for copies of cards that fly between places during transitions
+    const fxLayer = document.createElement("div");
+    fxLayer.className = "fx-layer";
+    document.body.appendChild(fxLayer);
+
     function setView(toDeck) {
       const wasDeck = deckView;
       if (reduceMotion) {
@@ -594,8 +599,37 @@
         const r = u.querySelector(".char-card").getBoundingClientRect();
         return onScreen(r) ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width } : null;
       });
+      // The backs beside the cards (laid out): copy the visible ones so they can fold away
+      const backGhosts = [];
+      if (!wasDeck && toDeck) {
+        units.forEach((u, i) => {
+          if (u.hidden || !before[i]) return;
+          const back = u.querySelector(".card-back");
+          const r = back.getBoundingClientRect();
+          if (!r.width) return;
+          const g = back.cloneNode(true);
+          g.classList.add("fx-ghost", "fx-back");
+          g.style.setProperty("--sign-color", u.style.getPropertyValue("--sign-color"));
+          g.style.setProperty("--back-w", `${r.width}px`);
+          g.style.setProperty("--card-w", `${r.width}px`);
+          Object.assign(g.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+          backGhosts.push({ g, card: before[i], r });
+        });
+      }
       const order = arrange(toDeck);
       if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
+      backGhosts.forEach(({ g, card, r }, k) => {
+        fxLayer.appendChild(g);
+        // slide under the card it belongs to and turn edge-on
+        const dx = card.x - (r.left + r.width / 2);
+        g.animate(
+          [
+            { transform: "perspective(900px) translateX(0) rotateY(0deg)", opacity: 1 },
+            { transform: `perspective(900px) translateX(${dx}px) rotateY(-90deg) scale(0.9)`, opacity: 0.6 }
+          ],
+          { duration: 260, delay: Math.min(k * 20, 200), easing: "ease-in", fill: "both" }
+        ).finished.then(() => g.remove(), () => g.remove());
+      });
       // Last: where they end up. Only cards that land on screen are animated; the rest
       // just appear in place, so there are never more than a screenful moving at once.
       const anims = [];
@@ -611,14 +645,18 @@
           // Dealing out: the card flies from its spot in the deck
           const start = before[i] || before.find(Boolean) || toC;
           const r = deckTransform(Math.min(rank, DECK_LAYERS)).r;
-          const delay = n++ * 28;
+          const delay = Math.min(n++ * 35, 520);
           u.classList.add("is-moving");
+          // a card-like arc: lifts a little on the way, lands flat
+          const dx = start.x - toC.x;
+          const dy = start.y - toC.y;
           anims.push(card.animate(
             [
-              { transform: `translate(${start.x - toC.x}px, ${start.y - toC.y}px) rotate(${r}deg) scale(${start.w / toC.w})` },
+              { transform: `translate(${dx}px, ${dy}px) rotate(${r}deg) scale(${start.w / toC.w})` },
+              { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 40}px) rotate(${r / 2}deg) scale(1.06)`, offset: 0.55 },
               { transform: "none" }
             ],
-            { duration: 460, delay, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" }
+            { duration: 560, delay, easing: "cubic-bezier(.35,.1,.25,1)", fill: "backwards" }
           ));
           // ...and its back slides out from behind it
           anims.push(u.querySelector(".card-back").animate(
@@ -632,12 +670,16 @@
           const final = deckTransform(Math.min(rank, DECK_LAYERS));
           const base = { x: toC.x - final.x, y: toC.y - final.y }; // deck spot without the fan
           u.classList.add("is-moving");
+          const gx = from.x - base.x;
+          const gy = from.y - base.y;
+          // lifts off the row in an arc and settles onto the deck at its tilt
           anims.push(u.animate(
             [
-              { transform: `translate(${from.x - base.x}px, ${from.y - base.y}px) scale(${from.w / toC.w})` },
+              { transform: `translate(${gx}px, ${gy}px) rotate(0deg) scale(${from.w / toC.w})` },
+              { transform: `translate(${gx * 0.45 + final.x}px, ${gy * 0.45 + final.y - 40}px) rotate(${final.r / 2}deg) scale(1.06)`, offset: 0.5 },
               { transform: tf(final) }
             ],
-            { duration: 420, delay: Math.min(n++ * 18, 300), easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" }
+            { duration: 560, delay: Math.min(n++ * 35, 520), easing: "cubic-bezier(.35,.1,.25,1)", fill: "backwards" }
           ));
         }
       });
@@ -843,9 +885,6 @@
 
     // Cards flying between modes: a copy of the old face flies the first half of the way
     // while turning edge-on, then the new face finishes the trip turning back into view
-    const fxLayer = document.createElement("div");
-    fxLayer.className = "fx-layer";
-    document.body.appendChild(fxLayer);
     const rectOf = (el) => el.getBoundingClientRect();
     const inView = (r) => r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && r.width > 0;
 

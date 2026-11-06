@@ -1274,6 +1274,15 @@ body.in-create .ambient {
   --slot: calc((var(--back-w) - 10px - 14px - 3 * 4px) / 4 * 0.9);
 }
 
+/* A card back copied out of the laid-out rows keeps its look while it folds away */
+.fx-ghost.fx-back {
+  display: block;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--sign-color);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #14121c);
+}
+
 .fx-ghost .slot {
   width: var(--slot);
   height: var(--slot);
