@@ -587,7 +587,8 @@
 
     function setView(toDeck) {
       const wasDeck = deckView;
-      if (reduceMotion) {
+      // Back to the deck from Layout: no animation, the laid-out cards just disappear
+      if (reduceMotion || (!wasDeck && toDeck)) {
         arrange(toDeck);
         if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
         return;
@@ -599,37 +600,8 @@
         const r = u.querySelector(".char-card").getBoundingClientRect();
         return onScreen(r) ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width } : null;
       });
-      // The backs beside the cards (laid out): copy the visible ones so they can fold away
-      const backGhosts = [];
-      if (!wasDeck && toDeck) {
-        units.forEach((u, i) => {
-          if (u.hidden || !before[i]) return;
-          const back = u.querySelector(".card-back");
-          const r = back.getBoundingClientRect();
-          if (!r.width) return;
-          const g = back.cloneNode(true);
-          g.classList.add("fx-ghost", "fx-back");
-          g.style.setProperty("--sign-color", u.style.getPropertyValue("--sign-color"));
-          g.style.setProperty("--back-w", `${r.width}px`);
-          g.style.setProperty("--card-w", `${r.width}px`);
-          Object.assign(g.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-          backGhosts.push({ g, card: before[i], r });
-        });
-      }
       const order = arrange(toDeck);
       if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
-      backGhosts.forEach(({ g, card, r }, k) => {
-        fxLayer.appendChild(g);
-        // slide under the card it belongs to and turn edge-on
-        const dx = card.x - (r.left + r.width / 2);
-        g.animate(
-          [
-            { transform: "perspective(900px) translateX(0) rotateY(0deg)", opacity: 1 },
-            { transform: `perspective(900px) translateX(${dx}px) rotateY(-90deg) scale(0.9)`, opacity: 0.6 }
-          ],
-          { duration: 260, delay: Math.min(k * 20, 200), easing: "ease-in", fill: "both" }
-        ).finished.then(() => g.remove(), () => g.remove());
-      });
       // Last: where they end up. Only cards that land on screen are animated; the rest
       // just appear in place, so there are never more than a screenful moving at once.
       const anims = [];
@@ -662,24 +634,6 @@
           anims.push(u.querySelector(".card-back").animate(
             [{ transform: "translateX(-50%)", opacity: 0 }, { transform: "none", opacity: 1 }],
             { duration: 300, delay: delay + 300, easing: "ease-out", fill: "backwards" }
-          ));
-        } else if (!wasDeck && toDeck) {
-          // Gathering up: the cards you could see fly back into the deck
-          const from = before[i];
-          if (!from) return;
-          const final = deckTransform(Math.min(rank, DECK_LAYERS));
-          const base = { x: toC.x - final.x, y: toC.y - final.y }; // deck spot without the fan
-          u.classList.add("is-moving");
-          const gx = from.x - base.x;
-          const gy = from.y - base.y;
-          // lifts off the row in an arc and settles onto the deck at its tilt
-          anims.push(u.animate(
-            [
-              { transform: `translate(${gx}px, ${gy}px) rotate(0deg) scale(${from.w / toC.w})` },
-              { transform: `translate(${gx * 0.45 + final.x}px, ${gy * 0.45 + final.y - 40}px) rotate(${final.r / 2}deg) scale(1.06)`, offset: 0.5 },
-              { transform: tf(final) }
-            ],
-            { duration: 560, delay: Math.min(n++ * 35, 520), easing: "cubic-bezier(.35,.1,.25,1)", fill: "backwards" }
           ));
         }
       });
@@ -757,15 +711,6 @@
         el.animate(frames, { duration, delay: Math.min(i * step, max), easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" });
       });
     }
-    function popTopCard() {
-      const top = grid.querySelector(".card-unit.is-top");
-      if (!top || reduceMotion) return;
-      top.animate(
-        [{ transform: `${top.style.transform} translateY(24px) scale(0.92)`, opacity: 0 }, { transform: top.style.transform, opacity: 1 }],
-        { duration: 340, easing: "cubic-bezier(.2,.8,.25,1)" }
-      );
-    }
-
     // ---- Vault mode: card backs on the left, the vault's chests on the right ----
     const vaultBtn = document.getElementById("vault-toggle");
     const vaultScreen = document.getElementById("vault-screen");
@@ -939,8 +884,15 @@
       return out;
     }
 
+    /** Opening another tab (Vault, New character) switches Layout off. */
+    function layoutOff() {
+      layoutBtn.dataset.on = "false";
+      layoutBtn.setAttribute("aria-pressed", "false");
+    }
+
     function setVault(on) {
       vaultOn = on;
+      if (on) layoutOff();
       held = null;
       vaultBtn.setAttribute("aria-pressed", String(on));
       noResults.hidden = true;
@@ -969,30 +921,10 @@
           { transform: "none", opacity: 1 }
         ], { step: 30, duration: 420 });
       } else {
-        // Where the card backs are before the switch
-        const backs = new Map();
-        if (!reduceMotion) {
-          vaultBoxes.forEach((box, i) => {
-            if (box.hidden) return;
-            const r = rectOf(box);
-            if (inView(r)) backs.set(i, { el: box, r });
-          });
-        }
+        // Back to the cards: no animation, the vault just disappears
         vaultScreen.hidden = true;
         grid.hidden = false;
-        arrange(deckView);
-        // Each back flies back to its card in the deck or the rows, turning to its front
-        let n = 0;
-        const order = deckView ? deckOrder() : byRecency();
-        order.forEach((i, rank) => {
-          const from = backs.get(i);
-          if (!from || units[i].hidden) return;
-          if (deckView && rank > 8) return; // only the top of the deck is visible
-          const to = rectOf(cards[i]);
-          if (!inView(to)) return;
-          flyFlip(from.el, from.r, cards[i], to, Math.min(n++ * 35, 520));
-        });
-        if (deckView && !backs.size) popTopCard();
+        arrange(layoutBtn.dataset.on !== "true"); // Layout was switched off: back to the deck
       }
     }
 
@@ -1276,6 +1208,7 @@
       createScreen.hidden = !on;
       document.body.classList.toggle("in-create", on);
       if (on) {
+        layoutOff();
         if (vaultOn) setVault(false);
         grid.hidden = true;
         noResults.hidden = true;
@@ -1300,7 +1233,6 @@
         grid.hidden = false;
         layoutBtn.dataset.on = "false";
         arrange(true);
-        popTopCard();
       }
     }
 
