@@ -8,7 +8,7 @@
   --bg-bottom: #2d2440;
   --ink: #f4efe6;
   --ink-dim: rgba(244, 239, 230, 0.7);
-  --card-w: clamp(150px, 20vw, 210px);
+  --card-w: clamp(175px, 20vw, 210px);
   --font-pixel: "Pixelify Sans", "Courier New", monospace;
 }
 
