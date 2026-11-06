@@ -31,12 +31,28 @@
         </svg>
         <span>Layout</span>
       </button>
+      <button type="button" class="layout-toggle vault-toggle" id="vault-toggle" aria-pressed="false">
+        <svg viewBox="0 0 8 8" aria-hidden="true">
+          <rect x="0" y="1" width="8" height="2" /><rect x="0" y="4" width="8" height="4" />
+          <rect x="3" y="3" width="2" height="2" fill="#0000" />
+        </svg>
+        <span>Vault</span>
+      </button>
       <span class="result-count" id="result-count" aria-live="polite"></span>
     </div>
 
     <!-- Cards are built from characters.js by app.js -->
     <div class="card-grid" id="card-grid" role="listbox" aria-label="Characters"></div>
     <p class="no-results" id="no-results" hidden>No characters match your search.</p>
+
+    <!-- Vault mode: every character's card back on the left, the vault's chests on the
+         right. Drag items between any slots, or tap an item and then tap where it goes. -->
+    <section class="vault-screen" id="vault-screen" hidden aria-label="Vault">
+      <div class="vault-chars" id="vault-chars"></div>
+      <div class="vault-side">
+        <div class="vault-chests" id="vault-chests"></div>
+      </div>
+    </section>
   </main>
 
   <!-- Double-click a card: enter the world with that character -->
@@ -99,6 +115,7 @@
   <script src="./items.js"></script>
   <script src="./art/screenshots/captions.js"></script>
   <script src="./characters.js"></script>
+  <script src="./vault.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

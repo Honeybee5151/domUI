@@ -12,7 +12,7 @@
  *   icon  - optional path to the item's image (e.g. "art/items/iron-sword.png")
  * An empty slot is null.
  */
-window.SLOT_COUNTS = { equipment: 4, inventory: 8, backpack: 8 };
+window.SLOT_COUNTS = { equipment: 4, inventory: 8, backpack: 8, chest: 8 };
 window.EQUIPMENT_SLOT_NAMES = ["Weapon", "Ability", "Armor", "Ring"];
 
 // Generic PLACEHOLDER items until the real ones are hooked up

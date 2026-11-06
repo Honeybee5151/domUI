@@ -749,6 +749,145 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Vault mode: every card back on the left, the vault's chests on the right
+   -------------------------------------------------------------------------- */
+
+.card-grid[hidden],
+.vault-screen[hidden] {
+  display: none;
+}
+
+.vault-screen {
+  --back-w: 200px;
+  --slot: calc((var(--back-w) - 10px - 14px - 3 * 4px) / 4 * 0.9);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  align-items: start;
+}
+
+/* Left: the backs of all your cards */
+.vault-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-content: flex-start;
+}
+
+.vault-char {
+  width: var(--back-w);
+  aspect-ratio: 63 / 88;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--sign-color);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #14121c), 0 6px 0 #0006;
+}
+
+.vault-char [data-section="equipment"] .slot {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #3d3856), inset 0 3px 0 #0003;
+}
+
+.vault-char .slot[data-slot-label]::before {
+  font-size: 0.4rem;
+}
+
+.vault-none {
+  color: var(--ink-dim);
+}
+
+/* Right: the vault, stays in view while the card backs scroll */
+.vault-side {
+  position: sticky;
+  top: 70px;
+  max-height: calc(100vh - 86px);
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 12px;
+  background: #1a1726;
+  box-shadow: inset 0 0 0 2px #3d3856;
+}
+
+.vault-chests {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--slot) * 4 + 3 * 4px + 20px), 1fr));
+  gap: 10px;
+}
+
+.vault-chest {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px 10px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #6b4a2b, #54391f);
+  box-shadow: inset 0 0 0 2px #2e1f12, inset 0 3px 0 #ffffff1a;
+}
+
+.chest-title {
+  color: #f6dfb0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chest-grid {
+  grid-template-columns: repeat(4, var(--slot));
+  grid-auto-rows: var(--slot);
+}
+
+.vault-screen .slot {
+  width: var(--slot);
+  height: var(--slot);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.vault-chest .slot {
+  background: #2a1c10;
+  box-shadow: inset 0 0 0 2px #1a1109, inset 0 3px 0 #0004;
+}
+
+.vault-screen .slot.has-item {
+  cursor: grab;
+}
+
+.vault-screen .slot.has-item:hover {
+  filter: brightness(1.25);
+}
+
+/* Picked up by tapping: the item glows; every slot shows it can take it */
+.vault-screen .slot.is-held {
+  box-shadow: inset 0 0 0 2px #fff, 0 0 10px 2px #fff8;
+}
+
+.vault-screen.is-holding .slot:not(.is-held):hover,
+.vault-screen .slot.is-drop {
+  box-shadow: inset 0 0 0 2px #f4efe6, inset 0 0 0 30px #ffffff14;
+}
+
+.vault-screen .slot.is-dragging {
+  opacity: 0.4;
+}
+
+/* Phones: card backs on top, the vault under them */
+@media (max-width: 760px) {
+  .vault-screen {
+    --back-w: calc((100vw - 2.25rem) / 2);
+    grid-template-columns: 1fr;
+  }
+
+  .vault-chars {
+    gap: 8px;
+  }
+
+  .vault-side {
+    position: static;
+    max-height: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Play: the chosen card glows, then the screen fades into "Entering the world"
    -------------------------------------------------------------------------- */
 

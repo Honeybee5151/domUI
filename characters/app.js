@@ -9,6 +9,9 @@
  *                          laid out: narrows the cards down ("/" to focus, Esc to clear)
  *   Layout button          lay out every character, with the back of its card (equipment,
  *                          inventory, backpack) beside it
+ *   Vault button           card backs on the left, the vault's chests (8 slots each) on the
+ *                          right: drag items between them, or tap an item then tap a slot;
+ *                          fires an "itemmoved" event for the game to save
  */
 (function () {
   "use strict";
@@ -225,22 +228,46 @@
     // Layout mode: the back of the card, with every slot
     unit.style.setProperty("--sign-color", sign.color);
     unit.style.setProperty("--sign-shade", sign.shade);
-    const back = unit.querySelector(".card-back");
-    back.querySelector(".back-name").textContent = character.name;
-    const counts = window.SLOT_COUNTS;
-    const sec = (name) => back.querySelector(`[data-section="${name}"] .back-grid`);
-    fillSlots(sec("equipment"), character.equipment, counts.equipment, window.EQUIPMENT_SLOT_NAMES);
-    fillSlots(sec("inventory"), character.inventory, counts.inventory);
-    if (Array.isArray(character.backpack)) {
-      fillSlots(sec("backpack"), character.backpack, counts.backpack);
-    } else {
-      sec("backpack").classList.add("is-empty");
-      sec("backpack").textContent = "No backpack";
-    }
-    // The same back, on the reverse side of the card itself (shown by flipping it)
-    card.querySelector(".card-face-back").appendChild(back.querySelector(".back-inner").cloneNode(true));
+    renderBack(unit, character);
 
     return unit;
+  }
+
+  /**
+   * Fills a card back (".back-inner") with a character's equipment, inventory and
+   * backpack. With an index, each slot is tagged so items can be moved (Vault mode).
+   */
+  function fillBack(backInner, character, index) {
+    const counts = window.SLOT_COUNTS;
+    backInner.querySelector(".back-name").textContent = character.name;
+    const sec = (name) => backInner.querySelector(`[data-section="${name}"] .back-grid`);
+    const lists = [
+      ["equipment", counts.equipment, window.EQUIPMENT_SLOT_NAMES],
+      ["inventory", counts.inventory, null],
+      ["backpack", counts.backpack, null]
+    ];
+    for (const [list, size, labels] of lists) {
+      const gridEl = sec(list);
+      gridEl.classList.remove("is-empty");
+      if (list === "backpack" && !Array.isArray(character.backpack)) {
+        gridEl.replaceChildren();
+        gridEl.classList.add("is-empty");
+        gridEl.textContent = "No backpack";
+        continue;
+      }
+      fillSlots(gridEl, character[list], size, labels);
+      if (index != null) {
+        [...gridEl.children].forEach((slot, pos) => (slot.dataset.ref = `c:${index}:${list}:${pos}`));
+      }
+    }
+  }
+
+  /** (Re)draws both backs of a card: the one beside it in Layout and the flip side. */
+  function renderBack(unit, character) {
+    const back = unit.querySelector(".card-back .back-inner");
+    fillBack(back, character);
+    const face = unit.querySelector(".card-face-back");
+    face.replaceChildren(back.cloneNode(true));
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -635,6 +662,182 @@
       layoutBtn.dataset.on = String(on);
       applyView();
     });
+
+    // ---- Vault mode: card backs on the left, the vault's chests on the right ----
+    const vaultBtn = document.getElementById("vault-toggle");
+    const vaultScreen = document.getElementById("vault-screen");
+    const vaultChars = document.getElementById("vault-chars");
+    const vaultChests = document.getElementById("vault-chests");
+    const chests = window.VAULT_CHESTS || [];
+    const backTemplate = template.content.querySelector(".card-back .back-inner");
+    let vaultOn = false;
+    let held = null; // slot ref of the item picked up by tapping, e.g. "v:2:5"
+
+    /** The array and position a slot ref points at. */
+    function slotTarget(ref) {
+      const parts = ref.split(":");
+      if (parts[0] === "v") return { list: chests[Number(parts[1])], pos: Number(parts[2]) };
+      const c = characters[Number(parts[1])];
+      return { list: c[parts[2]], pos: Number(parts[3]), character: c, index: Number(parts[1]) };
+    }
+
+    function renderVaultChar(index) {
+      const c = characters[index];
+      const sign = findSign(c.birthsign);
+      let box = vaultChars.querySelector(`[data-index="${index}"]`);
+      if (!box) {
+        box = document.createElement("div");
+        box.className = "vault-char";
+        box.dataset.index = String(index);
+        box.appendChild(backTemplate.cloneNode(true));
+      }
+      box.style.setProperty("--sign-color", sign.color);
+      box.style.setProperty("--sign-shade", sign.shade);
+      fillBack(box.querySelector(".back-inner"), c, index);
+      return box;
+    }
+
+    function renderChest(ci) {
+      let box = vaultChests.querySelector(`[data-chest="${ci}"]`);
+      if (!box) {
+        box = document.createElement("div");
+        box.className = "vault-chest";
+        box.dataset.chest = String(ci);
+        const title = document.createElement("span");
+        title.className = "chest-title";
+        const grid8 = document.createElement("span");
+        grid8.className = "back-grid chest-grid";
+        box.append(title, grid8);
+      }
+      const items = chests[ci];
+      box.querySelector(".chest-title").textContent = `Chest ${ci + 1}`;
+      const grid8 = box.querySelector(".chest-grid");
+      fillSlots(grid8, items, window.SLOT_COUNTS.chest);
+      [...grid8.children].forEach((slot, pos) => (slot.dataset.ref = `v:${ci}:${pos}`));
+      return box;
+    }
+
+    function renderVault() {
+      const q = search.value.trim().toLowerCase();
+      const order = byRecency().filter((i) => !q || matchesSearch(i));
+      vaultChars.replaceChildren(...order.map(renderVaultChar));
+      if (!order.length) {
+        const none = document.createElement("p");
+        none.className = "vault-none";
+        none.textContent = "No characters match your search.";
+        vaultChars.appendChild(none);
+      }
+      vaultChests.replaceChildren(...chests.map((_, ci) => renderChest(ci)));
+      const used = chests.flat().filter(Boolean).length;
+      countEl.textContent = `Vault · ${chests.length} chests · ${used}/${chests.length * window.SLOT_COUNTS.chest} used`;
+      markHeld();
+    }
+
+    function markHeld() {
+      vaultScreen.querySelectorAll(".slot.is-held").forEach((el) => el.classList.remove("is-held"));
+      vaultScreen.classList.toggle("is-holding", !!held);
+      if (held) vaultScreen.querySelector(`[data-ref="${held}"]`)?.classList.add("is-held");
+    }
+
+    /** Move the item at `from` to `to`; if `to` already has one, the two swap. */
+    function moveItem(from, to) {
+      if (from === to) return;
+      const a = slotTarget(from);
+      const b = slotTarget(to);
+      if (!a.list || !b.list || !a.list[a.pos]) return;
+      const item = a.list[a.pos];
+      a.list[a.pos] = b.list[b.pos] || null;
+      b.list[b.pos] = item;
+      // Redraw just what changed, here and on the cards themselves
+      for (const t of [a, b]) {
+        if (t.character) {
+          renderVaultChar(t.index);
+          renderBack(units[t.index], t.character);
+        }
+      }
+      const cs = new Set([from, to].filter((r) => r.startsWith("v:")).map((r) => Number(r.split(":")[1])));
+      cs.forEach(renderChest);
+      const used = chests.flat().filter(Boolean).length;
+      countEl.textContent = `Vault · ${chests.length} chests · ${used}/${chests.length * window.SLOT_COUNTS.chest} used`;
+      // The game listens for this to save the move
+      document.dispatchEvent(new CustomEvent("itemmoved", { detail: { from, to, item, swapped: a.list[a.pos] } }));
+    }
+
+    function setVault(on) {
+      vaultOn = on;
+      held = null;
+      vaultBtn.setAttribute("aria-pressed", String(on));
+      vaultScreen.hidden = !on;
+      grid.hidden = on;
+      noResults.hidden = true;
+      document.body.classList.toggle("in-vault", on);
+      if (on) {
+        renderVault();
+      } else {
+        arrange(deckView);
+      }
+    }
+
+    vaultBtn.addEventListener("click", () => setVault(!vaultOn));
+    // Layout leaves the vault
+    layoutBtn.addEventListener("click", () => vaultOn && setVault(false), true);
+    search.addEventListener("input", () => vaultOn && renderVault());
+
+    // Tap / click: pick an item up, then tap where it goes (tap it again to put it back)
+    vaultScreen.addEventListener("click", (e) => {
+      const slot = e.target.closest(".slot[data-ref]");
+      if (!slot) return;
+      const ref = slot.dataset.ref;
+      if (!held) {
+        if (slot.classList.contains("has-item")) held = ref;
+      } else if (held === ref) {
+        held = null;
+      } else {
+        moveItem(held, ref);
+        held = null;
+      }
+      markHeld();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (vaultOn && held && e.key === "Escape") {
+        held = null;
+        markHeld();
+      }
+    });
+
+    // Drag and drop with the mouse
+    vaultScreen.addEventListener("dragstart", (e) => {
+      const slot = e.target.closest(".slot.has-item[data-ref]");
+      if (!slot) return e.preventDefault();
+      held = null;
+      markHeld();
+      e.dataTransfer.setData("text/plain", slot.dataset.ref);
+      e.dataTransfer.effectAllowed = "move";
+      slot.classList.add("is-dragging");
+    });
+    vaultScreen.addEventListener("dragend", () => {
+      vaultScreen.querySelectorAll(".is-dragging, .is-drop").forEach((el) => el.classList.remove("is-dragging", "is-drop"));
+    });
+    vaultScreen.addEventListener("dragover", (e) => {
+      const slot = e.target.closest(".slot[data-ref]");
+      if (!slot) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      vaultScreen.querySelectorAll(".is-drop").forEach((el) => el !== slot && el.classList.remove("is-drop"));
+      slot.classList.add("is-drop");
+    });
+    vaultScreen.addEventListener("drop", (e) => {
+      const slot = e.target.closest(".slot[data-ref]");
+      if (!slot) return;
+      e.preventDefault();
+      const from = e.dataTransfer.getData("text/plain");
+      if (from) moveItem(from, slot.dataset.ref);
+    });
+    // Items can be dragged in Vault mode
+    new MutationObserver(() => {
+      vaultScreen.querySelectorAll(".slot.has-item:not([draggable])").forEach((s) => (s.draggable = true));
+      vaultScreen.querySelectorAll(".slot:not(.has-item)[draggable]").forEach((s) => s.removeAttribute("draggable"));
+    }).observe(vaultScreen, { childList: true, subtree: true });
 
     // ---- Right-click / long-press: flip the card to its back, and back again ----
     function flip(index) {

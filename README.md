@@ -76,7 +76,26 @@ dates, the abilities and the items are placeholders for now.
 - **Right-click** a card (hold on a phone) to see its equipment, inventory and backpack.
 - **Search** filters the cards by character name or class as you type. Press `/` to jump to
   the search box, and Esc to clear it.
-- **Layout** shows each character's backpack to the right of its card.
+- **Layout** deals the deck out, with the back of each card (equipment, inventory,
+  backpack) to its right.
+
+## Vault mode
+
+The **Vault** button switches to an easy way to move items between characters and the
+vault:
+
+- **Left:** the back of every character's card (equipment, inventory, backpack). The
+  search box filters them.
+- **Right:** the vault's chests, 8 slots each, staying in view while you scroll.
+- **Drag** an item to any slot, on a character or in a chest. Dropping it on a slot that
+  already has an item swaps the two. On phones, or by clicking, **tap** an item to pick
+  it up, then tap where it goes. Tap it again, or press Esc, to cancel.
+- Every move fires an `itemmoved` event (`detail: { from, to, item, swapped }`) for the
+  game to save. Slots are named like `c:<character index>:inventory:3` or
+  `v:<chest index>:5`.
+
+The chests and their contents are in `characters/vault.js` (placeholders for now). Moves
+only last until the page reloads, until the game saves them.
 
 ## Running locally
 
