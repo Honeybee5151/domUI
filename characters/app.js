@@ -907,38 +907,32 @@
       const slide = e.target.closest(".class-slide");
       if (slide) setClass(Number(slide.dataset.pos));
     });
-    // Drag the slider with a finger or the mouse: the cards follow, and letting go
-    // snaps to the nearest class (a long drag skips several)
+    // Swipe (finger or mouse) left or right: slides to the next or previous class,
+    // the same as the arrow buttons; the cards don't follow the pointer
     let drag = null;
-    const slideStep = () => (previews[0]?.offsetWidth || 240) * 0.7;
     track.addEventListener("dragstart", (e) => e.preventDefault()); // no native image dragging
     track.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
-      drag = { x: e.clientX, dx: 0, moved: false, id: e.pointerId };
+      drag = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId };
     });
     track.addEventListener("pointermove", (e) => {
       if (!drag || e.pointerId !== drag.id) return;
-      drag.dx = e.clientX - drag.x;
-      if (!drag.moved && Math.abs(drag.dx) > 6) {
+      if (!drag.moved && Math.abs(e.clientX - drag.x) > 8) {
         drag.moved = true;
-        track.classList.add("is-dragging");
-        // keep following the pointer even if it leaves the slider
+        // keep tracking the swipe even if it leaves the slider
         track.setPointerCapture(e.pointerId);
       }
-      track.style.setProperty("--drag", `${drag.dx}px`);
     });
     const endDrag = (e) => {
       if (!drag || e.pointerId !== drag.id) return;
-      const { dx, moved } = drag;
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      const moved = drag.moved;
       drag = null;
-      track.classList.remove("is-dragging");
-      track.style.setProperty("--drag", "0px");
-      if (moved) {
-        const steps = Math.round(-dx / slideStep()) || (Math.abs(dx) > 40 ? (dx < 0 ? 1 : -1) : 0);
-        if (steps) setClass(classPos + steps);
-        // swallow the click that follows a drag
-        track.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
-      }
+      if (!moved) return;
+      // swallow the click that follows a swipe
+      track.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
+      if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) setClass(classPos + (dx < 0 ? 1 : -1));
     };
     track.addEventListener("pointerup", endDrag);
     track.addEventListener("pointercancel", endDrag);

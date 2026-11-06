@@ -1012,17 +1012,6 @@ body.in-create .ambient {
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
-  cursor: grab;
-  --drag: 0px;
-}
-
-.class-track.is-dragging {
-  cursor: grabbing;
-}
-
-/* While dragging, the cards follow the pointer without easing */
-.class-track.is-dragging .class-slide {
-  transition: none;
 }
 
 .class-track img {
@@ -1034,7 +1023,7 @@ body.in-create .ambient {
   top: 12px;
   left: calc(50% - var(--card-w) / 2);
   /* side cards spaced so they only slightly tuck behind each other */
-  transform: translateX(calc(var(--off) * 70% + var(--drag))) scale(calc(1 - var(--abs) * 0.14));
+  transform: translateX(calc(var(--off) * 70%)) scale(calc(1 - var(--abs) * 0.14));
   opacity: calc(1 - var(--abs) * 0.3);
   z-index: calc(10 - var(--abs));
   transition: transform 260ms cubic-bezier(.3,.7,.3,1), opacity 260ms ease;
