@@ -96,6 +96,24 @@
       signEl.appendChild(placeholderSignIcon());
     }
 
+    // Ability section: one block per ability (name + short description)
+    const abilitiesEl = card.querySelector(".card-abilities");
+    for (const ability of character.abilities || []) {
+      const block = document.createElement("span");
+      block.className = "ability";
+      const n = document.createElement("span");
+      n.className = "ability-name";
+      n.textContent = ability.name;
+      const t = document.createElement("span");
+      t.className = "ability-text";
+      t.textContent = ability.text;
+      block.append(n, t);
+      block.style.display = "flex";
+      block.style.flexDirection = "column";
+      block.style.gap = "1px";
+      abilitiesEl.appendChild(block);
+    }
+
     // Bottom row: small info lines (only "created" for now; more can be added here)
     const foot = card.querySelector(".card-foot");
     const info = [];

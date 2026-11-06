@@ -204,9 +204,12 @@ body {
 }
 
 /* Middle: square art window */
+/* Picture box in trading-card proportions: about 55 x 40 mm on a 63 x 88 mm card */
 .card-art {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 11 / 8;
   width: 100%;
+  flex-shrink: 0;
+  position: relative;
   overflow: hidden;
   border: 3px solid var(--bar);
   border-radius: 4px;
@@ -215,10 +218,13 @@ body {
   place-items: center;
 }
 
+/* Whole sprite always visible, centred in the box */
 .card-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  position: absolute;
+  inset: 6%;
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
   image-rendering: pixelated;
 }
 
@@ -230,24 +236,48 @@ body {
   shape-rendering: crispEdges;
 }
 
-/* Bottom: small info lines (created date for now; room for more) */
-.card-foot {
+/* Ability section: fills the space between the picture and the bottom info row */
+.card-abilities {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 2px;
-  padding: 5px 7px;
+  gap: 4px;
+  padding: 6px 8px;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--bar) 85%, transparent);
+  background: var(--bar);
   overflow: hidden;
+  text-align: left;
+}
+
+.ability-name {
+  font-size: clamp(0.66rem, 0.9vw, 0.8rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.ability-text {
+  font-size: clamp(0.55rem, 0.72vw, 0.66rem);
+  line-height: 1.3;
+  color: color-mix(in srgb, #1e1a17 80%, var(--frame-dark));
+}
+
+/* Bottom: small info row (created date for now; room for more) */
+.card-foot {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bar) 70%, transparent);
 }
 
 .foot-line {
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  font-size: clamp(0.55rem, 0.72vw, 0.66rem);
+  font-size: clamp(0.5rem, 0.62vw, 0.58rem);
   line-height: 1.25;
   white-space: nowrap;
 }
