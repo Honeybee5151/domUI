@@ -38,12 +38,45 @@
         </svg>
         <span>Vault</span>
       </button>
+      <button type="button" class="layout-toggle create-toggle" id="create-toggle" aria-pressed="false">
+        <svg viewBox="0 0 8 8" aria-hidden="true">
+          <rect x="3" y="0" width="2" height="8" /><rect x="0" y="3" width="8" height="2" />
+        </svg>
+        <span>New character</span>
+      </button>
       <span class="result-count" id="result-count" aria-live="polite"></span>
     </div>
 
     <!-- Cards are built from characters.js by app.js -->
     <div class="card-grid" id="card-grid" role="listbox" aria-label="Characters"></div>
     <p class="no-results" id="no-results" hidden>No characters match your search.</p>
+
+    <!-- New character: pick a class with the slider, a name and a birthsign -->
+    <section class="create-screen" id="create-screen" hidden aria-label="Create a new character">
+      <div class="class-slider">
+        <button type="button" class="slider-arrow" id="class-prev" aria-label="Previous class">
+          <svg viewBox="0 0 8 8" aria-hidden="true"><rect x="4" y="0" width="2" height="2" /><rect x="2" y="2" width="2" height="2" /><rect x="0" y="3" width="2" height="2" /><rect x="2" y="4" width="2" height="2" /><rect x="4" y="6" width="2" height="2" /></svg>
+        </button>
+        <div class="class-track" id="class-track" role="listbox" aria-label="Class"></div>
+        <button type="button" class="slider-arrow" id="class-next" aria-label="Next class">
+          <svg viewBox="0 0 8 8" aria-hidden="true"><rect x="2" y="0" width="2" height="2" /><rect x="4" y="2" width="2" height="2" /><rect x="6" y="3" width="2" height="2" /><rect x="4" y="4" width="2" height="2" /><rect x="2" y="6" width="2" height="2" /></svg>
+        </button>
+      </div>
+      <div class="class-dots" id="class-dots"></div>
+
+      <form class="create-form" id="create-form" novalidate>
+        <label class="create-field">
+          <span class="create-label">Name</span>
+          <input type="text" id="new-name" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Name your character" />
+        </label>
+        <div class="create-field">
+          <span class="create-label" id="sign-label">Birthsign</span>
+          <div class="sign-pick" id="sign-pick" role="radiogroup" aria-labelledby="sign-label"></div>
+        </div>
+        <p class="create-error" id="create-error" aria-live="polite"></p>
+        <button type="submit" class="create-confirm">Create character</button>
+      </form>
+    </section>
 
     <!-- Vault mode: every character's card back on the left, the vault's chests on the
          right. Drag items between any slots, or tap an item and then tap where it goes. -->

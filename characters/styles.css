@@ -904,6 +904,255 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   New character: class slider, name and birthsign
+   -------------------------------------------------------------------------- */
+
+.create-screen[hidden] {
+  display: none;
+}
+
+.create-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.class-slider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-arrow {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: #2c2840;
+  box-shadow: inset 0 0 0 2px #3d3856;
+  color: var(--ink);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.slider-arrow:hover {
+  background: #36314d;
+}
+
+.slider-arrow svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+
+/* The chosen class's card in the middle, its neighbours smaller to each side */
+.class-track {
+  --card-w: clamp(200px, 22vw, 250px);
+  position: relative;
+  flex: 1;
+  height: calc(var(--card-w) * 88 / 63 + 24px);
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.class-slide {
+  position: absolute;
+  top: 12px;
+  left: calc(50% - var(--card-w) / 2);
+  transform: translateX(calc(var(--off) * 62%)) scale(calc(1 - var(--abs) * 0.16));
+  opacity: calc(1 - var(--abs) * 0.32);
+  z-index: calc(10 - var(--abs));
+  transition: transform 260ms cubic-bezier(.3,.7,.3,1), opacity 260ms ease;
+  cursor: pointer;
+}
+
+.class-slide.is-far {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.class-slide .char-card {
+  pointer-events: none;
+}
+
+.class-slide.is-current .char-card {
+  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
+}
+
+.class-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.class-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: #ffffff2e;
+  cursor: pointer;
+}
+
+.class-dot.is-on {
+  background: var(--ink);
+}
+
+.create-form {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.create-label {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#new-name {
+  height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  background: #2c2840;
+  box-shadow: inset 0 0 0 2px #3d3856;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+#new-name:focus {
+  box-shadow: inset 0 0 0 2px #8f86c4;
+}
+
+#new-name::placeholder {
+  color: #ffffff59;
+}
+
+.sign-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sign-option {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sign-shade);
+  box-shadow: inset 0 0 0 2px #0003;
+  color: var(--sign-color);
+  cursor: pointer;
+}
+
+.sign-option img,
+.sign-option .sign-placeholder {
+  width: 70%;
+  height: 70%;
+  image-rendering: pixelated;
+}
+
+.sign-option[aria-checked="true"] {
+  box-shadow: 0 0 0 3px #fff, 0 0 14px 2px var(--sign-color);
+}
+
+/* Sign names only on hover, like on the cards */
+.sign-option::after {
+  content: attr(data-name);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #0d0b14;
+  box-shadow: 0 0 0 1px #ffffff30;
+  color: var(--ink);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 3px);
+  pointer-events: none;
+  transition: opacity 100ms ease, transform 100ms ease;
+}
+
+.sign-option:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.create-error {
+  min-height: 1.2em;
+  margin-top: -6px;
+  color: #ff9a8a;
+  font-size: 0.85rem;
+}
+
+.create-confirm {
+  height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: #f4efe6;
+  box-shadow: 0 5px 0 #8f86c4;
+  color: #1e1b2b;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.create-confirm:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #8f86c4;
+}
+
+@media (max-width: 520px) {
+  .class-track {
+    --card-w: 190px;
+  }
+
+  .slider-arrow {
+    width: 36px;
+    height: 36px;
+  }
+
+  .create-toggle span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .class-slide {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Play: the chosen card glows, then the screen fades into "Entering the world"
    -------------------------------------------------------------------------- */
 

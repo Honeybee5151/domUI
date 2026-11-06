@@ -522,7 +522,7 @@
         const hit = q && matchScore(top, q0) > 0;
         countEl.textContent = !q ? "" : hit ? `Best match: ${characters[top].name}` : "No match";
       } else {
-        countEl.textContent = q ? `${shown} of ${characters.length}` : `${characters.length} characters`;
+        countEl.textContent = q ? `${shown} of ${characters.length}` : "";
       }
       noResults.hidden = toDeck || shown > 0;
       // Keep one visible card in the tab order: the top of the deck, or the selection
@@ -773,6 +773,211 @@
       vaultScreen.querySelectorAll(".slot.has-item:not([draggable])").forEach((s) => (s.draggable = true));
       vaultScreen.querySelectorAll(".slot:not(.has-item)[draggable]").forEach((s) => s.removeAttribute("draggable"));
     }).observe(vaultScreen, { childList: true, subtree: true });
+
+    // ---- New character: class slider, name and birthsign ----
+    const createBtn = document.getElementById("create-toggle");
+    const createScreen = document.getElementById("create-screen");
+    const track = document.getElementById("class-track");
+    const dots = document.getElementById("class-dots");
+    const nameInput = document.getElementById("new-name");
+    const signPick = document.getElementById("sign-pick");
+    const createError = document.getElementById("create-error");
+    const classList = window.CLASS_LIST || [];
+    const signs = window.BIRTHSIGNS || [];
+    let createOn = false;
+    let classPos = 0;
+    let signId = signs[0] ? signs[0].id : null;
+
+    const today = () => {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+
+    /** A brand-new character of a class: level 1, empty slots, no backpack. */
+    function newCharacter(cls, name, birthsign) {
+      const counts = window.SLOT_COUNTS;
+      return {
+        name,
+        class: cls,
+        birthsign,
+        level: 1,
+        hp: 800,
+        created: today(),
+        lastPlayed: "",
+        abilities: [{ name: "Ability name", text: "Short description of what this ability does goes here." }],
+        equipment: Array(counts.equipment).fill(null),
+        inventory: Array(counts.inventory).fill(null),
+        backpack: null,
+        screenshot: null,
+        image: null
+      };
+    }
+
+    // One preview card per class in the slider
+    const previews = classList.map((cls, i) => {
+      const slide = document.createElement("div");
+      slide.className = "class-slide";
+      slide.dataset.pos = String(i);
+      slide.setAttribute("role", "option");
+      track.appendChild(slide);
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "class-dot";
+      dot.setAttribute("aria-label", cls);
+      dot.addEventListener("click", () => setClass(i));
+      dots.appendChild(dot);
+      return slide;
+    });
+
+    function drawPreviews() {
+      const name = nameInput.value.trim();
+      previews.forEach((slide, i) => {
+        const cls = classList[i];
+        // Your name on the chosen class's card; the others show their class name
+        const unit = buildCard(template, newCharacter(cls, i === classPos ? name || cls : cls, signId), -1);
+        const card = unit.querySelector(".char-card");
+        card.tabIndex = -1;
+        card.removeAttribute("role");
+        card.setAttribute("aria-hidden", "true");
+        slide.replaceChildren(card);
+        slide.setAttribute("aria-label", cls);
+      });
+      placeSlides();
+    }
+
+    function placeSlides() {
+      const n = previews.length;
+      previews.forEach((slide, i) => {
+        // The slider wraps around: the last classes sit to the left of the first one
+        let off = i - classPos;
+        if (off > n / 2) off -= n;
+        if (off < -n / 2) off += n;
+        const a = Math.abs(off);
+        slide.style.setProperty("--off", String(off));
+        slide.style.setProperty("--abs", String(a));
+        slide.classList.toggle("is-current", off === 0);
+        slide.classList.toggle("is-far", a > 2);
+        slide.setAttribute("aria-selected", String(off === 0));
+      });
+      [...dots.children].forEach((d, i) => d.classList.toggle("is-on", i === classPos));
+    }
+
+    function setClass(i) {
+      classPos = (i + classList.length) % classList.length;
+      drawPreviews();
+    }
+
+    document.getElementById("class-prev").addEventListener("click", () => setClass(classPos - 1));
+    document.getElementById("class-next").addEventListener("click", () => setClass(classPos + 1));
+    track.addEventListener("click", (e) => {
+      const slide = e.target.closest(".class-slide");
+      if (slide) setClass(Number(slide.dataset.pos));
+    });
+    // Swipe on phones (or drag with the mouse)
+    let swipeX = null;
+    track.addEventListener("pointerdown", (e) => (swipeX = e.clientX));
+    track.addEventListener("pointerup", (e) => {
+      if (swipeX == null) return;
+      const dx = e.clientX - swipeX;
+      swipeX = null;
+      if (Math.abs(dx) > 40) setClass(classPos + (dx < 0 ? 1 : -1));
+    });
+    createScreen.addEventListener("keydown", (e) => {
+      if (e.target === nameInput) return;
+      if (e.key === "ArrowLeft") setClass(classPos - 1);
+      if (e.key === "ArrowRight") setClass(classPos + 1);
+    });
+
+    // Birthsign picker: the 8 symbols, the name shows on hover
+    signs.forEach((sign) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "sign-option";
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-label", sign.name);
+      b.dataset.name = sign.name;
+      b.style.setProperty("--sign-color", sign.color);
+      b.style.setProperty("--sign-shade", sign.shade);
+      if (sign.icon) {
+        const img = document.createElement("img");
+        img.src = sign.icon;
+        img.alt = "";
+        b.appendChild(img);
+      } else {
+        b.appendChild(placeholderSignIcon());
+      }
+      b.addEventListener("click", () => {
+        signId = sign.id;
+        markSign();
+        drawPreviews();
+      });
+      signPick.appendChild(b);
+    });
+    function markSign() {
+      [...signPick.children].forEach((b, i) => b.setAttribute("aria-checked", String(signs[i].id === signId)));
+    }
+
+    nameInput.addEventListener("input", () => {
+      createError.textContent = "";
+      drawPreviews();
+    });
+
+    function nameProblem(name) {
+      if (name.length < 2) return "Give your character a name (at least 2 letters).";
+      if (!/^[\p{L}][\p{L} '-]*$/u.test(name)) return "Use letters only (spaces, ' and - are fine).";
+      if (characters.some((c) => c.name.toLowerCase() === name.toLowerCase())) return `You already have a character called ${name}.`;
+      return "";
+    }
+
+    document.getElementById("create-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim().replace(/\s+/g, " ");
+      const problem = nameProblem(name);
+      if (problem) {
+        createError.textContent = problem;
+        nameInput.focus();
+        return;
+      }
+      const c = newCharacter(classList[classPos], name, signId);
+      c.lastPlayed = new Date().toISOString().slice(0, 19); // newest goes on top of the deck
+      const index = characters.length;
+      characters.push(c);
+      const unit = buildCard(template, c, index);
+      units.push(unit);
+      cards.push(unit.querySelector(".char-card"));
+      grid.appendChild(unit);
+      // The game listens for this to save the new character
+      document.dispatchEvent(new CustomEvent("charactercreated", { detail: { index, character: c } }));
+      nameInput.value = "";
+      setCreate(false);
+      select(index, { scroll: false });
+    });
+
+    function setCreate(on) {
+      createOn = on;
+      createBtn.setAttribute("aria-pressed", String(on));
+      createScreen.hidden = !on;
+      if (on) {
+        if (vaultOn) setVault(false);
+        grid.hidden = true;
+        noResults.hidden = true;
+        countEl.textContent = "";
+        createError.textContent = "";
+        markSign();
+        drawPreviews();
+        nameInput.focus({ preventScroll: true });
+      } else {
+        grid.hidden = false;
+        layoutBtn.dataset.on = "false";
+        arrange(true);
+      }
+    }
+
+    createBtn.addEventListener("click", () => setCreate(!createOn));
+    // Layout or Vault leave the create screen
+    layoutBtn.addEventListener("click", () => createOn && setCreate(false), true);
+    vaultBtn.addEventListener("click", () => createOn && setCreate(false), true);
 
     // ---- Right-click / long-press: flip the card to its back, and back again ----
     function flip(index) {

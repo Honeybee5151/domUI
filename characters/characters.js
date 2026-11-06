@@ -46,6 +46,9 @@ const KIT = {
   Knight: "melee", Paladin: "melee", Assassin: "melee", Necromancer: "magic", Huntress: "ranged",
   Mystic: "magic", Trickster: "melee", Sorcerer: "magic", Ninja: "melee", Tribesman: "ranged"
 };
+// Every class, in the game's order (used by the New character class slider)
+window.CLASS_LIST = Object.keys(KIT);
+
 
 // [name, class, birthsign, level, hp, created, has backpack]
 const ROSTER = [

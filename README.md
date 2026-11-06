@@ -79,6 +79,20 @@ dates, the abilities and the items are placeholders for now.
 - **Layout** deals the deck out, with the back of each card (equipment, inventory,
   backpack) to its right.
 
+## New character
+
+The **New character** button opens the create screen:
+
+- **Class slider:** one card per class, with the chosen one large in the middle and its
+  neighbours to each side. It wraps around. Change class with the arrow buttons, the
+  arrow keys, a swipe on phones, a tap on a side card or the dots underneath.
+- **Name:** 2 to 16 letters (spaces, `'` and `-` are allowed), and it can't be a name you
+  already use.
+- **Birthsign:** pick one of the 8 symbols. The name shows on hover.
+- The chosen card previews your name, class and sign. **Create character** adds the new
+  character at level 1 with empty slots, on top of the deck. It fires a
+  `charactercreated` event (`detail: { index, character }`) for the game to save it.
+
 ## Vault mode
 
 The **Vault** button switches to an easy way to move items between characters and the
