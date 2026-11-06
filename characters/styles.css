@@ -983,8 +983,9 @@ body {
   position: absolute;
   top: 12px;
   left: calc(50% - var(--card-w) / 2);
-  transform: translateX(calc(var(--off) * 62% + var(--drag))) scale(calc(1 - var(--abs) * 0.16));
-  opacity: calc(1 - var(--abs) * 0.32);
+  /* side cards spaced so they only slightly tuck behind each other */
+  transform: translateX(calc(var(--off) * 70% + var(--drag))) scale(calc(1 - var(--abs) * 0.14));
+  opacity: calc(1 - var(--abs) * 0.3);
   z-index: calc(10 - var(--abs));
   transition: transform 260ms cubic-bezier(.3,.7,.3,1), opacity 260ms ease;
   cursor: pointer;

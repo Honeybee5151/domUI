@@ -863,9 +863,20 @@
       [...dots.children].forEach((d, i) => d.classList.toggle("is-on", i === classPos));
     }
 
+    function setSlideName(i, name) {
+      const el = previews[i]?.querySelector(".card-name");
+      if (!el) return;
+      el.textContent = name;
+      el.classList.toggle("is-long", name.length > 9);
+    }
+
     function setClass(i) {
+      const before = classPos;
       classPos = (i + classList.length) % classList.length;
-      drawPreviews();
+      // Only the names change: the old card shows its class again, the new one your name
+      setSlideName(before, classList[before]);
+      setSlideName(classPos, nameInput.value.trim() || classList[classPos]);
+      placeSlides();
     }
 
     document.getElementById("class-prev").addEventListener("click", () => setClass(classPos - 1));
@@ -877,19 +888,20 @@
     // Drag the slider with a finger or the mouse: the cards follow, and letting go
     // snaps to the nearest class (a long drag skips several)
     let drag = null;
-    const slideStep = () => (previews[0]?.offsetWidth || 240) * 0.62;
+    const slideStep = () => (previews[0]?.offsetWidth || 240) * 0.7;
     track.addEventListener("dragstart", (e) => e.preventDefault()); // no native image dragging
     track.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
       drag = { x: e.clientX, dx: 0, moved: false, id: e.pointerId };
-      track.setPointerCapture(e.pointerId);
     });
     track.addEventListener("pointermove", (e) => {
       if (!drag || e.pointerId !== drag.id) return;
       drag.dx = e.clientX - drag.x;
-      if (Math.abs(drag.dx) > 6) {
+      if (!drag.moved && Math.abs(drag.dx) > 6) {
         drag.moved = true;
         track.classList.add("is-dragging");
+        // keep following the pointer even if it leaves the slider
+        track.setPointerCapture(e.pointerId);
       }
       track.style.setProperty("--drag", `${drag.dx}px`);
     });
@@ -945,7 +957,7 @@
 
     nameInput.addEventListener("input", () => {
       createError.textContent = "";
-      drawPreviews();
+      setSlideName(classPos, nameInput.value.trim() || classList[classPos]);
     });
 
     function nameProblem(name) {
