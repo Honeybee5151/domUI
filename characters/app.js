@@ -728,8 +728,7 @@
         vaultChars.appendChild(none);
       }
       vaultChests.replaceChildren(...chests.map((_, ci) => renderChest(ci)));
-      const used = chests.flat().filter(Boolean).length;
-      countEl.textContent = `Vault · ${chests.length} chests · ${used}/${chests.length * window.SLOT_COUNTS.chest} used`;
+      countEl.textContent = "";
       markHeld();
     }
 
@@ -757,8 +756,6 @@
       }
       const cs = new Set([from, to].filter((r) => r.startsWith("v:")).map((r) => Number(r.split(":")[1])));
       cs.forEach(renderChest);
-      const used = chests.flat().filter(Boolean).length;
-      countEl.textContent = `Vault · ${chests.length} chests · ${used}/${chests.length * window.SLOT_COUNTS.chest} used`;
       // The game listens for this to save the move
       document.dispatchEvent(new CustomEvent("itemmoved", { detail: { from, to, item, swapped: a.list[a.pos] } }));
     }
