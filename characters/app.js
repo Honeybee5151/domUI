@@ -539,6 +539,8 @@
         u.style.zIndex = toDeck ? String(order.length - depth) : "";
         u.style.transform = toDeck ? tf(deckTransform(depth)) : "";
         u.classList.toggle("is-top", toDeck && depth === 0);
+        // Cards deep in the deck are completely covered: don't draw them at all
+        u.classList.toggle("is-buried", toDeck && depth > DECK_LAYERS + 1);
         u.querySelector(".card-back").setAttribute("aria-hidden", String(toDeck));
       });
       deckView = toDeck;
@@ -582,60 +584,67 @@
       const wasDeck = deckView;
       if (reduceMotion) {
         arrange(toDeck);
+        if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
         return;
       }
-      // First: where every card is now
-      const before = units.map((u) => (u.hidden ? null : centerOf(u.querySelector(".char-card"))));
+      const onScreen = (r) => r.bottom > -40 && r.top < innerHeight + 40;
+      // First: where the cards are now (only the ones you can see matter)
+      const before = units.map((u) => {
+        if (u.hidden) return null;
+        const r = u.querySelector(".char-card").getBoundingClientRect();
+        return onScreen(r) ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width } : null;
+      });
       const order = arrange(toDeck);
-      // Last: where they end up; then animate from first to last
-      const maxStagger = 600;
-      const step = Math.min(35, maxStagger / Math.max(1, order.length));
+      if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
+      // Last: where they end up. Only cards that land on screen are animated; the rest
+      // just appear in place, so there are never more than a screenful moving at once.
+      const anims = [];
+      let n = 0;
       order.forEach((i, rank) => {
         const u = units[i];
         if (u.hidden) return;
         const card = u.querySelector(".char-card");
-        const from = before[i];
+        const to = card.getBoundingClientRect();
+        if (!onScreen(to)) return;
+        const toC = { x: to.left + to.width / 2, y: to.top + to.height / 2, w: to.width };
         if (wasDeck && !toDeck) {
-          // Dealing out: animate the card from its spot in the deck
-          const to = centerOf(card);
-          const start = from || to;
-          const depth = Math.min(rank, DECK_LAYERS);
-          const r = deckTransform(depth).r;
-          const scale = start.w / to.w;
-          card.animate(
+          // Dealing out: the card flies from its spot in the deck
+          const start = before[i] || before.find(Boolean) || toC;
+          const r = deckTransform(Math.min(rank, DECK_LAYERS)).r;
+          const delay = n++ * 28;
+          u.classList.add("is-moving");
+          anims.push(card.animate(
             [
-              { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) rotate(${r}deg) scale(${scale})`, zIndex: 60 },
-              { transform: "none", zIndex: 60 }
+              { transform: `translate(${start.x - toC.x}px, ${start.y - toC.y}px) rotate(${r}deg) scale(${start.w / toC.w})` },
+              { transform: "none" }
             ],
-            { duration: 520, delay: rank * step, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" }
-          );
+            { duration: 460, delay, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" }
+          ));
           // ...and its back slides out from behind it
-          u.querySelector(".card-back").animate(
-            [
-              { transform: "translateX(-60%) scale(0.9)", opacity: 0 },
-              { transform: "none", opacity: 1 }
-            ],
-            { duration: 380, delay: rank * step + 380, easing: "ease-out", fill: "backwards" }
-          );
+          anims.push(u.querySelector(".card-back").animate(
+            [{ transform: "translateX(-50%)", opacity: 0 }, { transform: "none", opacity: 1 }],
+            { duration: 300, delay: delay + 300, easing: "ease-out", fill: "backwards" }
+          ));
         } else if (!wasDeck && toDeck) {
-          // Gathering up: animate the whole unit from its spot in the rows into the deck
+          // Gathering up: the cards you could see fly back into the deck
+          const from = before[i];
           if (!from) return;
-          const depth = Math.min(rank, DECK_LAYERS);
-          const final = deckTransform(depth);
-          const now = centerOf(card); // includes the deck transform
-          const base = { x: now.x - final.x, y: now.y - final.y }; // deck spot without the fan
-          const scale = from.w / now.w;
-          const delay = (Math.min(order.length, 40) - Math.min(rank, 40)) * Math.min(step, 15);
-          u.animate(
+          const final = deckTransform(Math.min(rank, DECK_LAYERS));
+          const base = { x: toC.x - final.x, y: toC.y - final.y }; // deck spot without the fan
+          u.classList.add("is-moving");
+          anims.push(u.animate(
             [
-              { transform: `translate(${from.x - base.x}px, ${from.y - base.y}px) rotate(0deg) scale(${scale})` },
+              { transform: `translate(${from.x - base.x}px, ${from.y - base.y}px) scale(${from.w / toC.w})` },
               { transform: tf(final) }
             ],
-            { duration: 480, delay, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" }
-          );
+            { duration: 420, delay: Math.min(n++ * 18, 300), easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" }
+          ));
         }
       });
-      if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
+      // Clean up the "about to move" hints once everything has landed
+      Promise.allSettled(anims.map((a) => a.finished)).then(() => {
+        units.forEach((u) => u.classList.remove("is-moving"));
+      });
     }
 
     function applyView() {

@@ -388,6 +388,12 @@ body.in-create .ambient {
   display: none;
 }
 
+/* Cards buried under the visible top of the deck aren't drawn (they can't be seen),
+   except while they're flying into the deck */
+.card-grid.is-deck .card-unit.is-buried:not(.is-moving) {
+  visibility: hidden;
+}
+
 .no-results {
   margin-top: 2rem;
   color: var(--ink-dim);
@@ -1238,6 +1244,18 @@ body.in-create .ambient {
   .class-slide {
     transition: none;
   }
+}
+
+/* Cards dealing out / gathering up: drawn on their own layer, above the rest */
+.card-grid.is-layout .card-unit.is-moving {
+  position: relative;
+  z-index: 60;
+}
+
+.card-unit.is-moving .char-card,
+.card-unit.is-moving .card-back,
+.card-grid.is-deck .card-unit.is-moving {
+  will-change: transform;
 }
 
 /* Cards flying between modes */
