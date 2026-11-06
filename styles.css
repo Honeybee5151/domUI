@@ -125,6 +125,11 @@ body {
   text-align: left;
 }
 
+.card-name.is-long {
+  font-size: clamp(0.6rem, 0.82vw, 0.74rem);
+  letter-spacing: -0.01em;
+}
+
 /* HP sits just left of the birthsign badge */
 .card-stats {
   flex-shrink: 0;
@@ -241,19 +246,19 @@ body {
   shape-rendering: crispEdges;
 }
 
-/* Level: small badge in the top-left corner of the picture */
-.card-level {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  z-index: 1;
+/* Level: right after the name, in the top bar */
+.card-title {
+  min-width: 0;
   display: flex;
   align-items: baseline;
-  gap: 2px;
-  padding: 2px 5px 1px;
-  border-radius: 3px;
-  background: color-mix(in srgb, #14121c 78%, transparent);
-  color: #fff;
+  gap: 5px;
+}
+
+.card-level {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
   line-height: 1;
 }
 
@@ -262,12 +267,13 @@ body {
 }
 
 .level-label {
-  font-size: clamp(0.45rem, 0.6vw, 0.55rem);
-  opacity: 0.8;
+  font-size: clamp(0.5rem, 0.66vw, 0.6rem);
+  font-weight: 700;
+  color: var(--frame-dark);
 }
 
 .level-value {
-  font-size: clamp(0.62rem, 0.85vw, 0.75rem);
+  font-size: clamp(0.7rem, 0.95vw, 0.85rem);
   font-weight: 700;
 }
 
@@ -372,6 +378,146 @@ body {
   box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
 }
 
+/* --------------------------------------------------------------------------
+   Slots panel: equipment (4), inventory (8), backpack (8) = 20 slots
+   -------------------------------------------------------------------------- */
+
+.slots-panel {
+  --sign-color: #8a8f99;
+  --sign-shade: #4d525c;
+  --slot: clamp(40px, 9vw, 52px);
+  margin: auto;
+  padding: 14px 16px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #1e1b2b;
+  box-shadow: 0 0 0 3px var(--sign-color), 0 18px 40px #000a;
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  /* let item names on hover show past the panel's edge */
+  overflow: visible;
+}
+
+.slots-panel::backdrop {
+  background: rgba(10, 8, 18, 0.65);
+}
+
+.slots-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 10px;
+}
+
+.slots-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.slots-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: #ffffff14;
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.slots-close:hover {
+  background: #ffffff26;
+}
+
+.slots-section {
+  margin-top: 10px;
+}
+
+.slots-section[hidden] {
+  display: none;
+}
+
+.slots-heading {
+  margin-bottom: 6px;
+  color: color-mix(in srgb, var(--sign-color) 60%, var(--ink));
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, var(--slot));
+  gap: 6px;
+}
+
+.slot {
+  position: relative;
+  width: var(--slot);
+  height: var(--slot);
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #2c2840;
+  box-shadow: inset 0 0 0 2px #3d3856, inset 0 3px 0 #0003;
+}
+
+/* Equipment slots get a tinted frame in the card's colour */
+.slot-grid-4 .slot {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #3d3856), inset 0 3px 0 #0003;
+}
+
+/* Empty equipment slots show what goes there */
+.slot[data-slot-label]::before {
+  content: attr(data-slot-label);
+  color: #ffffff40;
+  font-size: 0.5rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.slot img,
+.item-placeholder {
+  width: 70%;
+  height: 70%;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+/* Item name on hover */
+.slot.has-item::after {
+  content: attr(data-name);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #0d0b14;
+  box-shadow: 0 0 0 1px #ffffff30;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 3px);
+  pointer-events: none;
+  transition: opacity 100ms ease, transform 100ms ease;
+  z-index: 2;
+}
+
+.slot.has-item:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.slots-total {
+  margin-top: 10px;
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .char-card {
     transition: none;
@@ -385,5 +531,47 @@ body {
 
   .card-name {
     font-size: 0.72rem;
+  }
+
+  .card-name.is-long {
+    font-size: 0.56rem;
+  }
+
+  .card-head {
+    gap: 3px;
+  }
+
+  .card-title {
+    gap: 3px;
+  }
+}
+
+/* Narrowest phones: tighter top bar so names still fit */
+@media (max-width: 380px) {
+  .card-name {
+    font-size: 0.62rem;
+  }
+
+  .card-name.is-long {
+    font-size: 0.5rem;
+  }
+
+  .hp-label {
+    display: none;
+  }
+
+  .hp-value {
+    font-size: 0.7rem;
+  }
+
+  .card-sign {
+    font-size: 0.72rem;
+  }
+}
+
+/* Very small screens: one card per row */
+@media (max-width: 340px) {
+  :root {
+    --card-w: min(240px, calc(100vw - 2rem));
   }
 }

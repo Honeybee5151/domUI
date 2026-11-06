@@ -19,20 +19,42 @@
     <p class="select-status" id="select-status" aria-live="polite">&nbsp;</p>
   </main>
 
+  <!-- Right-click (or long-press) a card: its equipment, inventory and backpack -->
+  <dialog class="slots-panel" id="slots-panel" aria-labelledby="slots-title">
+    <div class="slots-head">
+      <h2 class="slots-title" id="slots-title"></h2>
+      <button type="button" class="slots-close" id="slots-close" aria-label="Close">&times;</button>
+    </div>
+    <section class="slots-section" data-section="equipment">
+      <h3 class="slots-heading">Equipment</h3>
+      <div class="slot-grid slot-grid-4"></div>
+    </section>
+    <section class="slots-section" data-section="inventory">
+      <h3 class="slots-heading">Inventory</h3>
+      <div class="slot-grid"></div>
+    </section>
+    <section class="slots-section" data-section="backpack">
+      <h3 class="slots-heading">Backpack</h3>
+      <div class="slot-grid"></div>
+    </section>
+    <p class="slots-total"></p>
+  </dialog>
+
   <!-- One card, cloned for each character -->
   <template id="card-template">
     <button type="button" class="char-card" role="option" aria-selected="false">
       <span class="card-inner">
         <span class="card-head">
-          <span class="card-name"></span>
+          <span class="card-title">
+            <span class="card-name"></span>
+            <span class="card-level"><span class="level-label">Lv</span><span class="level-value"></span></span>
+          </span>
           <span class="card-stats">
             <span class="card-hp"><span class="hp-value"></span><span class="hp-label">HP</span></span>
             <span class="card-sign"></span>
           </span>
         </span>
-        <span class="card-art">
-          <span class="card-level"><span class="level-label">Lv</span><span class="level-value"></span></span>
-        </span>
+        <span class="card-art"></span>
         <span class="card-abilities"></span>
         <span class="card-foot"></span>
       </span>
@@ -40,6 +62,7 @@
   </template>
 
   <script src="./birthsigns.js"></script>
+  <script src="./items.js"></script>
   <script src="./characters.js"></script>
   <script src="./app.js"></script>
 </body>

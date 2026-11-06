@@ -75,7 +75,10 @@
     card.dataset.index = String(index);
     card.setAttribute("aria-label", `${character.name}, level ${character.level}, ${character.hp} HP, ${sign.name}`);
 
-    card.querySelector(".card-name").textContent = character.name;
+    const nameEl = card.querySelector(".card-name");
+    nameEl.textContent = character.name;
+    // Long names get a smaller font so they fit next to the level, HP and sign
+    if (character.name.length > 9) nameEl.classList.add("is-long");
 
     const hpEl = card.querySelector(".card-hp");
     if (character.hp != null) {
@@ -198,6 +201,130 @@
         const from = selected < 0 ? 0 : selected;
         select(Math.min(cards.length - 1, Math.max(0, from + moves[e.key])));
       }
+    });
+
+    // ---- Right-click / long-press: equipment, inventory and backpack ----
+    const panel = document.getElementById("slots-panel");
+    const counts = window.SLOT_COUNTS;
+
+    function itemIcon(item) {
+      if (item.icon) {
+        const img = document.createElement("img");
+        img.src = item.icon;
+        img.alt = "";
+        return img;
+      }
+      // Placeholder: a small pixel blob in the item's colour
+      const svg = document.createElementNS(SVG_NS, "svg");
+      svg.setAttribute("viewBox", "0 0 8 8");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("class", "item-placeholder");
+      for (const [x, y, w, h, fill] of [
+        [2, 1, 4, 1, item.color], [1, 2, 6, 4, item.color], [2, 6, 4, 1, item.color],
+        [2, 2, 2, 1, "#ffffff90"], [5, 4, 1, 2, "#00000040"]
+      ]) {
+        const r = document.createElementNS(SVG_NS, "rect");
+        r.setAttribute("x", x);
+        r.setAttribute("y", y);
+        r.setAttribute("width", w);
+        r.setAttribute("height", h);
+        r.setAttribute("fill", fill);
+        svg.appendChild(r);
+      }
+      return svg;
+    }
+
+    function fillSlots(gridEl, items, size, labels) {
+      gridEl.replaceChildren();
+      for (let i = 0; i < size; i++) {
+        const item = (items || [])[i] || null;
+        const slot = document.createElement("span");
+        slot.className = "slot" + (item ? " has-item" : "");
+        const label = labels ? labels[i] : null;
+        if (item) {
+          slot.appendChild(itemIcon(item));
+          slot.dataset.name = label ? `${item.name} (${label})` : item.name;
+          slot.setAttribute("aria-label", slot.dataset.name);
+        } else {
+          slot.setAttribute("aria-label", label ? `${label}: empty` : "Empty slot");
+          if (label) slot.dataset.slotLabel = label;
+        }
+        slot.setAttribute("role", "img");
+        gridEl.appendChild(slot);
+      }
+    }
+
+    function openSlots(index) {
+      const c = characters[index];
+      const sign = findSign(c.birthsign);
+      panel.style.setProperty("--sign-color", sign.color);
+      panel.style.setProperty("--sign-shade", sign.shade);
+      panel.querySelector(".slots-title").textContent = c.name;
+
+      const sec = (name) => panel.querySelector(`[data-section="${name}"]`);
+      fillSlots(sec("equipment").querySelector(".slot-grid"), c.equipment, counts.equipment, window.EQUIPMENT_SLOT_NAMES);
+      fillSlots(sec("inventory").querySelector(".slot-grid"), c.inventory, counts.inventory);
+      const hasBackpack = Array.isArray(c.backpack);
+      sec("backpack").hidden = !hasBackpack;
+      if (hasBackpack) fillSlots(sec("backpack").querySelector(".slot-grid"), c.backpack, counts.backpack);
+
+      const total = counts.equipment + counts.inventory + (hasBackpack ? counts.backpack : 0);
+      const used = [...(c.equipment || []), ...(c.inventory || []), ...(hasBackpack ? c.backpack : [])].filter(Boolean).length;
+      panel.querySelector(".slots-total").textContent = `${used} / ${total} slots used` + (hasBackpack ? "" : " · no backpack");
+
+      if (!panel.open) panel.showModal();
+    }
+
+    grid.addEventListener("contextmenu", (e) => {
+      const card = e.target.closest(".char-card");
+      if (!card) return;
+      e.preventDefault();
+      select(Number(card.dataset.index));
+      openSlots(Number(card.dataset.index));
+    });
+
+    // Phones: hold a finger on a card for half a second
+    let pressTimer = null;
+    let pressStart = null;
+    grid.addEventListener("touchstart", (e) => {
+      const card = e.target.closest(".char-card");
+      if (!card || e.touches.length !== 1) return;
+      pressStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        longPressFired = true;
+        select(Number(card.dataset.index));
+        openSlots(Number(card.dataset.index));
+      }, 500);
+    }, { passive: true });
+    const cancelPress = () => {
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = null;
+    };
+    // Lifting the finger after a long-press would send a click that lands on the
+    // backdrop and closes the panel straight away: swallow it.
+    let longPressFired = false;
+    grid.addEventListener("touchend", (e) => {
+      cancelPress();
+      if (longPressFired) {
+        e.preventDefault();
+        longPressFired = false;
+      }
+    });
+    grid.addEventListener("touchcancel", cancelPress);
+    grid.addEventListener("touchmove", (e) => {
+      if (!pressStart) return;
+      const t = e.touches[0];
+      if (Math.hypot(t.clientX - pressStart.x, t.clientY - pressStart.y) > 10) cancelPress();
+    }, { passive: true });
+
+    document.getElementById("slots-close").addEventListener("click", () => panel.close());
+    // Clicking the dimmed backdrop (outside the panel) closes it; Esc is built into <dialog>
+    panel.addEventListener("click", (e) => {
+      if (e.target === panel) panel.close();
+    });
+    panel.addEventListener("close", () => {
+      if (selected >= 0) cards[selected].focus({ preventScroll: true });
     });
 
     // Only one card is in the tab order at a time (roving tabindex)
