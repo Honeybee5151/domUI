@@ -8,7 +8,7 @@ Each character is shown as a trading card:
 
 - **Top:** the character's name, their **HP**, and their **birthsign** symbol in a badge
   at the top right. The sign's name only appears when you hover over the badge.
-- **Picture:** a wide 3:2 picture box taking about 43% of the card's height, the same
+- **Picture:** the character's level in the top-left corner, in a wide 3:2 picture box taking about 43% of the card's height, the same
   proportions as a standard 63 × 88 mm trading card.
 - **Abilities:** each ability with a small "Ability" tag, its name and a short
   description, under the picture.
@@ -25,7 +25,7 @@ Pick a card by clicking or tapping it, or with the arrow keys. The page fires a
 - `characters.js` lists the classes in the game's order:
 
   ```js
-  { name: "Rogue", birthsign: "sign-1", hp: 800, created: "2026-11-06",
+  { name: "Rogue", birthsign: "sign-1", level: 1, hp: 800, created: "2026-11-06",
     abilities: [{ name: "Ability name", text: "What it does." }],
     image: "art/classes/rogue.png" }
   ```
@@ -36,7 +36,7 @@ Pick a card by clicking or tapping it, or with the arrow keys. The page fires a
 - `birthsigns.js` holds the 8 birthsigns: `id`, `name`, `color`, `shade` and an optional
   `icon` image. Without an icon, the badge shows a small gem in the sign's colour.
 
-The birthsign names, the sign given to each class, the HP values, the created
+The birthsign names, the sign given to each class, the levels, the HP values, the created
 dates and the abilities are placeholders for now.
 
 ## Running

@@ -71,7 +71,8 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   The card: standard trading-card proportions (63 x 88)
+   The card: standard trading-card proportions (63 x 88), one continuous face.
+   Text sits straight on the card; only the picture has its own frame.
    -------------------------------------------------------------------------- */
 
 .char-card {
@@ -81,32 +82,37 @@ body {
   border: 0;
   border-radius: 12px;
   background: var(--frame);
-  box-shadow: inset 0 0 0 3px var(--frame-dark), 0 6px 0 #0006;
+  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 6px 0 #0006;
   font: inherit;
   color: #1e1a17;
   cursor: pointer;
   transition: transform 140ms ease, box-shadow 140ms ease;
 }
 
+/* Card face: a soft gradient of the sign colour, light at the top, deeper at the bottom */
 .card-inner {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 4px;
+  padding: 0 7px 5px;
   border-radius: 8px;
-  background: var(--frame-dark);
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, #fff 55%, transparent), transparent 70%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sign-color) 30%, #fff8ec) 0%,
+      color-mix(in srgb, var(--sign-color) 45%, #fff8ec) 55%,
+      color-mix(in srgb, var(--sign-color) 62%, #fff8ec) 100%
+    );
 }
 
-/* Top: name bar with the birth sign badge in the top-right */
+/* Top: name on the left; HP and the birthsign symbol on the right */
 .card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 3px 4px 3px 8px;
-  border-radius: 5px;
-  background: var(--bar);
+  padding: 5px 0 4px;
 }
 
 .card-name {
@@ -144,7 +150,6 @@ body {
 }
 
 .hp-label {
-  font-size: 0.6em;
   font-size: clamp(0.5rem, 0.7vw, 0.62rem);
   color: var(--frame-dark);
 }
@@ -203,23 +208,22 @@ body {
   filter: brightness(1.35) saturate(1.2);
 }
 
-/* Middle: square art window */
-/* Picture box: 3:2, about 43% of the card's height and nearly its full width
-   (proportions taken from a standard trading card's layout) */
+/* Picture: 3:2, about 43% of the card's height and nearly its full width,
+   with a thin frame (proportions taken from a standard trading card's layout) */
 .card-art {
   aspect-ratio: 3 / 2;
   width: 100%;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  border: 2px solid var(--bar);
   border-radius: 3px;
-  background: var(--art);
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--art) 70%, #fff), var(--art) 75%);
+  box-shadow: 0 0 0 2px var(--frame-dark), 0 2px 0 2px #0002;
   display: grid;
   place-items: center;
 }
 
-/* Whole sprite always visible, centred in the box */
+/* Whole sprite always visible, centred in the picture */
 .card-art img {
   position: absolute;
   inset: 6%;
@@ -237,16 +241,44 @@ body {
   shape-rendering: crispEdges;
 }
 
-/* Ability section: fills the space between the picture and the bottom info row */
+/* Level: small badge in the top-left corner of the picture */
+.card-level {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 2px 5px 1px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #14121c 78%, transparent);
+  color: #fff;
+  line-height: 1;
+}
+
+.card-level[hidden] {
+  display: none;
+}
+
+.level-label {
+  font-size: clamp(0.45rem, 0.6vw, 0.55rem);
+  opacity: 0.8;
+}
+
+.level-value {
+  font-size: clamp(0.62rem, 0.85vw, 0.75rem);
+  font-weight: 700;
+}
+
+/* Abilities: straight on the card face, under the picture */
 .card-abilities {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 6px 8px;
-  border-radius: 5px;
-  background: var(--bar);
+  gap: 6px;
+  padding: 9px 1px 4px;
   overflow: hidden;
   text-align: left;
 }
@@ -293,15 +325,14 @@ body {
   color: color-mix(in srgb, #1e1a17 80%, var(--frame-dark));
 }
 
-/* Bottom: small info row (created date for now; room for more) */
+/* Bottom: small info, separated only by a faint line */
 .card-foot {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 3px 7px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--bar) 70%, transparent);
+  padding-top: 4px;
+  border-top: 1px solid color-mix(in srgb, var(--frame-dark) 35%, transparent);
 }
 
 .foot-line {
@@ -338,7 +369,7 @@ body {
 
 .char-card.is-selected {
   transform: translateY(-8px) scale(1.04);
-  box-shadow: inset 0 0 0 3px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
+  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -73,7 +73,7 @@
     card.style.setProperty("--sign-color", sign.color);
     card.style.setProperty("--sign-shade", sign.shade);
     card.dataset.index = String(index);
-    card.setAttribute("aria-label", `${character.name}, ${character.hp} HP, ${sign.name}`);
+    card.setAttribute("aria-label", `${character.name}, level ${character.level}, ${character.hp} HP, ${sign.name}`);
 
     card.querySelector(".card-name").textContent = character.name;
 
@@ -132,6 +132,13 @@
       v.textContent = value;
       line.append(l, v);
       foot.appendChild(line);
+    }
+
+    const levelEl = card.querySelector(".card-level");
+    if (character.level != null) {
+      levelEl.querySelector(".level-value").textContent = String(character.level);
+    } else {
+      levelEl.hidden = true;
     }
 
     const art = card.querySelector(".card-art");
