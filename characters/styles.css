@@ -900,6 +900,8 @@ body.in-create .ambient {
   top: 70px;
   max-height: calc(100vh - 86px);
   overflow-y: auto;
+  /* chests sliding in from the right must not add a sideways scrollbar */
+  overflow-x: hidden;
   padding: 12px;
   border-radius: 12px;
   background: #1a1726;
