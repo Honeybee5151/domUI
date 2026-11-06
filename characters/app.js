@@ -874,15 +874,40 @@
       const slide = e.target.closest(".class-slide");
       if (slide) setClass(Number(slide.dataset.pos));
     });
-    // Swipe on phones (or drag with the mouse)
-    let swipeX = null;
-    track.addEventListener("pointerdown", (e) => (swipeX = e.clientX));
-    track.addEventListener("pointerup", (e) => {
-      if (swipeX == null) return;
-      const dx = e.clientX - swipeX;
-      swipeX = null;
-      if (Math.abs(dx) > 40) setClass(classPos + (dx < 0 ? 1 : -1));
+    // Drag the slider with a finger or the mouse: the cards follow, and letting go
+    // snaps to the nearest class (a long drag skips several)
+    let drag = null;
+    const slideStep = () => (previews[0]?.offsetWidth || 240) * 0.62;
+    track.addEventListener("dragstart", (e) => e.preventDefault()); // no native image dragging
+    track.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      drag = { x: e.clientX, dx: 0, moved: false, id: e.pointerId };
+      track.setPointerCapture(e.pointerId);
     });
+    track.addEventListener("pointermove", (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.dx = e.clientX - drag.x;
+      if (Math.abs(drag.dx) > 6) {
+        drag.moved = true;
+        track.classList.add("is-dragging");
+      }
+      track.style.setProperty("--drag", `${drag.dx}px`);
+    });
+    const endDrag = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const { dx, moved } = drag;
+      drag = null;
+      track.classList.remove("is-dragging");
+      track.style.setProperty("--drag", "0px");
+      if (moved) {
+        const steps = Math.round(-dx / slideStep()) || (Math.abs(dx) > 40 ? (dx < 0 ? 1 : -1) : 0);
+        if (steps) setClass(classPos + steps);
+        // swallow the click that follows a drag
+        track.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
+      }
+    };
+    track.addEventListener("pointerup", endDrag);
+    track.addEventListener("pointercancel", endDrag);
     createScreen.addEventListener("keydown", (e) => {
       if (e.target === nameInput) return;
       if (e.key === "ArrowLeft") setClass(classPos - 1);
