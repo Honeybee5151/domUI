@@ -12,18 +12,15 @@
   --font-pixel: "Pixelify Sans", "Courier New", monospace;
 }
 
-/* Element palettes: frame, frame shade, name bar, art window background, badge */
-.char-card[data-element="fire"] {
-  --frame: #e2603f; --frame-dark: #9c3324; --bar: #ffd7b8; --art: #ffb27f; --badge: #c2412b;
-}
-.char-card[data-element="earth"] {
-  --frame: #7fae4e; --frame-dark: #4b6e2c; --bar: #e3efc8; --art: #b9d58c; --badge: #5c8636;
-}
-.char-card[data-element="air"] {
-  --frame: #b7a6ea; --frame-dark: #6f5fb3; --bar: #ece6ff; --art: #d3c8fb; --badge: #7f6dc6;
-}
-.char-card[data-element="water"] {
-  --frame: #4fa3d9; --frame-dark: #276d9e; --bar: #d4ecfb; --art: #94cdef; --badge: #2f7fb7;
+/* Card palette: everything derives from the birthsign's colour (set per card by app.js) */
+.char-card {
+  --sign-color: #8a8f99;
+  --sign-shade: #4d525c;
+  --frame: var(--sign-color);
+  --frame-dark: color-mix(in srgb, var(--sign-color) 55%, #14121c);
+  --bar: color-mix(in srgb, var(--sign-color) 22%, #fff8ec);
+  --art: color-mix(in srgb, var(--sign-color) 40%, #fff8ec);
+  --badge: var(--sign-shade);
 }
 
 *,
@@ -123,6 +120,7 @@ body {
 }
 
 .card-sign {
+  position: relative;
   flex-shrink: 0;
   width: 1.75em;
   height: 1.75em;
@@ -131,10 +129,48 @@ body {
   border-radius: 50%;
   background: var(--badge);
   box-shadow: inset 0 0 0 2px #0003;
-  color: #fff;
-  font-family: "Segoe UI Symbol", "Noto Sans Symbols", "DejaVu Sans", sans-serif;
+  color: var(--sign-color);
   font-size: clamp(0.8rem, 1.1vw, 0.95rem);
   line-height: 1;
+}
+
+/* Sign name appears only while hovering the badge */
+.card-sign::after {
+  content: attr(data-name);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: -4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #14121c;
+  box-shadow: 0 0 0 2px var(--sign-color);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 5;
+}
+
+.card-sign:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Sign icon (or placeholder gem) inside the badge, pixel-crisp */
+.card-sign img,
+.sign-placeholder {
+  width: 72%;
+  height: 72%;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+.sign-placeholder {
+  filter: brightness(1.35) saturate(1.2);
 }
 
 /* Middle: square art window */
@@ -164,7 +200,7 @@ body {
   shape-rendering: crispEdges;
 }
 
-/* Bottom: the sign's name (room for stats later) */
+/* Bottom: empty panel, room for a description or stats later */
 .card-foot {
   flex: 1;
   display: grid;

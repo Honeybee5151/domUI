@@ -29,19 +29,57 @@
     return svg;
   }
 
+  /** Small pixel gem in the sign's colour, used until the sign has its own icon. */
+  function placeholderSignIcon() {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 8 8");
+    svg.setAttribute("class", "sign-placeholder");
+    svg.setAttribute("aria-hidden", "true");
+    // [x, y, w, h, fill]: body in the sign colour, a light facet and a dark edge
+    const rects = [
+      [2, 1, 4, 1, "currentColor"], [1, 2, 6, 2, "currentColor"], [2, 4, 4, 1, "currentColor"],
+      [3, 5, 2, 1, "currentColor"], [2, 2, 2, 1, "#ffffffb0"], [5, 3, 1, 2, "#00000040"]
+    ];
+    for (const [x, y, w, h, fill] of rects) {
+      const r = document.createElementNS(SVG_NS, "rect");
+      r.setAttribute("x", x);
+      r.setAttribute("y", y);
+      r.setAttribute("width", w);
+      r.setAttribute("height", h);
+      r.setAttribute("fill", fill);
+      svg.appendChild(r);
+    }
+    return svg;
+  }
+
+  function findSign(id) {
+    const signs = window.BIRTHSIGNS || [];
+    return signs.find((s) => s.id === id) || signs[0];
+  }
+
   function buildCard(template, character, index) {
-    const sign = window.birthSign(character.birthday);
+    const sign = findSign(character.birthsign);
     const card = template.content.firstElementChild.cloneNode(true);
 
-    card.dataset.element = sign.element;
+    // The card's colours all derive from these two (see styles.css)
+    card.style.setProperty("--sign-color", sign.color);
+    card.style.setProperty("--sign-shade", sign.shade);
     card.dataset.index = String(index);
     card.setAttribute("aria-label", `${character.name}, ${sign.name}`);
 
     card.querySelector(".card-name").textContent = character.name;
 
+    // The sign is just a symbol; its name only appears on hover
     const signEl = card.querySelector(".card-sign");
-    signEl.textContent = sign.glyph;
-    signEl.title = sign.name;
+    signEl.dataset.name = sign.name;
+    if (sign.icon) {
+      const icon = document.createElement("img");
+      icon.src = sign.icon;
+      icon.alt = "";
+      signEl.appendChild(icon);
+    } else {
+      signEl.appendChild(placeholderSignIcon());
+    }
 
     const art = card.querySelector(".card-art");
     if (character.image) {
@@ -54,7 +92,6 @@
       art.appendChild(placeholderArt());
     }
 
-    card.querySelector(".card-foot").textContent = sign.name;
     return card;
   }
 
@@ -81,7 +118,7 @@
       cards[index].focus({ preventScroll: true });
       cards[index].scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
       const c = characters[index];
-      status.textContent = `${c.name} — ${window.birthSign(c.birthday).name}`;
+      status.textContent = c.name;
       document.dispatchEvent(new CustomEvent("characterselected", { detail: { index, character: c } }));
     }
 
