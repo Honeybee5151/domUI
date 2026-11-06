@@ -288,17 +288,17 @@ body {
 
 .card-grid.is-deck {
   --card-w: clamp(220px, 26vw, 280px);
-  flex: 1;
   position: relative;
   display: block;
-  min-height: calc(var(--card-w) * 88 / 63 + 90px);
+  /* room for the top card plus the fanned layers under it */
+  min-height: calc(var(--card-w) * 88 / 63 + 40px);
 }
 
-/* All cards sit on the same spot in the middle; app.js fans each layer a little */
+/* All cards sit on the same spot in the top-left; app.js fans each layer a little */
 .card-grid.is-deck .card-unit {
   position: absolute;
-  left: calc(50% - var(--card-w) / 2);
-  top: calc(50% - var(--card-w) * 44 / 63 - 20px);
+  left: 0;
+  top: 0;
   pointer-events: none;
 }
 
@@ -322,10 +322,9 @@ body {
 }
 
 .view-hint {
-  margin-bottom: 1rem;
   color: var(--ink-dim);
   font-size: 0.9rem;
-  text-align: center;
+  text-align: left;
 }
 
 .view-hint strong {
