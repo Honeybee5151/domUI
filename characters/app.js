@@ -533,72 +533,10 @@
       return order;
     }
 
-    const centerOf = (el) => {
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width };
-    };
-
-    /**
-     * Switch views with a deal / gather animation: each card flies from where it was
-     * to where it ends up (FLIP), one after another.
-     */
+    /** Switch between the deck and the laid-out rows (instantly, like Vault mode). */
     function setView(toDeck) {
       const wasDeck = deckView;
-      if (reduceMotion) {
-        arrange(toDeck);
-        return;
-      }
-      // First: where every card is now
-      const before = units.map((u) => (u.hidden ? null : centerOf(u.querySelector(".char-card"))));
-      const order = arrange(toDeck);
-      // Last: where they end up; then animate from first to last
-      const maxStagger = 600;
-      const step = Math.min(35, maxStagger / Math.max(1, order.length));
-      order.forEach((i, rank) => {
-        const u = units[i];
-        if (u.hidden) return;
-        const card = u.querySelector(".char-card");
-        const from = before[i];
-        if (wasDeck && !toDeck) {
-          // Dealing out: animate the card from its spot in the deck
-          const to = centerOf(card);
-          const start = from || to;
-          const depth = Math.min(rank, DECK_LAYERS);
-          const r = deckTransform(depth).r;
-          const scale = start.w / to.w;
-          card.animate(
-            [
-              { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) rotate(${r}deg) scale(${scale})`, zIndex: 60 },
-              { transform: "none", zIndex: 60 }
-            ],
-            { duration: 520, delay: rank * step, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" }
-          );
-          // ...and its back slides out from behind it
-          u.querySelector(".card-back").animate(
-            [
-              { transform: "translateX(-60%) scale(0.9)", opacity: 0 },
-              { transform: "none", opacity: 1 }
-            ],
-            { duration: 380, delay: rank * step + 380, easing: "ease-out", fill: "backwards" }
-          );
-        } else if (!wasDeck && toDeck) {
-          // Gathering up: animate the whole unit from its spot in the rows into the deck
-          if (!from) return;
-          const depth = Math.min(rank, DECK_LAYERS);
-          const final = deckTransform(depth);
-          const now = centerOf(card); // includes the deck transform
-          const base = { x: now.x - final.x, y: now.y - final.y }; // deck spot without the fan
-          const scale = from.w / now.w;
-          const delay = (Math.min(order.length, 40) - Math.min(rank, 40)) * Math.min(step, 15);
-          u.animate(
-            [
-              { transform: `translate(${from.x - base.x}px, ${from.y - base.y}px) rotate(0deg) scale(${scale})` },
-              { transform: tf(final) }
-            ],
-            { duration: 480, delay, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" }
-          );
-        }
-      });
+      arrange(toDeck);
       if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
     }
 
