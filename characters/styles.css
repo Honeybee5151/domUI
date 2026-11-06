@@ -142,7 +142,7 @@ body {
 }
 
 .layout-toggle {
-  margin-left: auto;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -267,18 +267,21 @@ body {
   font-size: 0.62rem;
 }
 
-.card-back .slot {
+.card-back .slot,
+.card-face-back .slot {
   width: var(--slot);
   height: var(--slot);
   border-radius: 4px;
 }
 
 /* Empty equipment slot labels are tiny on the back */
-.card-back .slot[data-slot-label]::before {
+.card-back .slot[data-slot-label]::before,
+.card-face-back .slot[data-slot-label]::before {
   font-size: 0.4rem;
 }
 
-.card-back [data-section="equipment"] .slot {
+.card-back [data-section="equipment"] .slot,
+.card-face-back [data-section="equipment"] .slot {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #3d3856), inset 0 3px 0 #0003;
 }
 
@@ -358,6 +361,41 @@ body {
   color: #1e1a17;
   cursor: pointer;
   transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+/* Flip: front and back share the card; right-click turns it over */
+.char-card {
+  perspective: 900px;
+}
+
+.card-flip {
+  position: relative;
+  display: block;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(.3,.7,.3,1);
+}
+
+.char-card.is-flipped .card-flip {
+  transform: rotateY(180deg);
+}
+
+.card-inner,
+.card-face-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-face-back {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform: rotateY(180deg);
+}
+
+.card-face-back .back-inner {
+  /* slots sized to the card, same as the back shown beside it in Layout */
+  --slot: calc((var(--card-w) - 10px - 14px - 3 * 4px) / 4 * 0.9);
 }
 
 /* Card face: a soft gradient of the sign colour, light at the top, deeper at the bottom */
@@ -650,80 +688,8 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Slots panel: equipment (4), inventory (8), backpack (8) = 20 slots
+   Item slots (used on the back of the card): equipment 4, inventory 8, backpack 8
    -------------------------------------------------------------------------- */
-
-.slots-panel {
-  --sign-color: #8a8f99;
-  --sign-shade: #4d525c;
-  --slot: clamp(40px, 9vw, 52px);
-  margin: auto;
-  padding: 14px 16px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: #1e1b2b;
-  box-shadow: 0 0 0 3px var(--sign-color), 0 18px 40px #000a;
-  color: var(--ink);
-  font-family: var(--font-pixel);
-  /* let item names on hover show past the panel's edge */
-  overflow: visible;
-}
-
-.slots-panel::backdrop {
-  background: rgba(10, 8, 18, 0.65);
-}
-
-.slots-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 10px;
-}
-
-.slots-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.slots-close {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 6px;
-  background: #ffffff14;
-  color: var(--ink);
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.slots-close:hover {
-  background: #ffffff26;
-}
-
-.slots-section {
-  margin-top: 10px;
-}
-
-.slots-section[hidden] {
-  display: none;
-}
-
-.slots-heading {
-  margin-bottom: 6px;
-  color: color-mix(in srgb, var(--sign-color) 60%, var(--ink));
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.slot-grid {
-  display: grid;
-  grid-template-columns: repeat(4, var(--slot));
-  gap: 6px;
-}
 
 .slot {
   position: relative;
@@ -734,11 +700,6 @@ body {
   border-radius: 6px;
   background: #2c2840;
   box-shadow: inset 0 0 0 2px #3d3856, inset 0 3px 0 #0003;
-}
-
-/* Equipment slots get a tinted frame in the card's colour */
-.slot-grid-4 .slot {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #3d3856), inset 0 3px 0 #0003;
 }
 
 /* Empty equipment slots show what goes there */
@@ -935,15 +896,29 @@ body {
   }
 }
 
-/* Phones: search on its own row, count + layout below */
+/* Phones: search and Layout share the top row, the count goes below */
 @media (max-width: 520px) {
   .toolbar {
     flex-wrap: wrap;
+    row-gap: 6px;
   }
 
   .search {
-    flex-basis: 100%;
+    min-width: 0;
     max-width: none;
+  }
+
+  .search input {
+    width: 100%;
+  }
+
+  .layout-toggle {
+    padding: 0 11px;
+  }
+
+  .result-count {
+    flex-basis: 100%;
+    font-size: 0.78rem;
   }
 
   .search-hint {

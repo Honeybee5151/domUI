@@ -25,7 +25,6 @@
         <input type="search" id="search" placeholder="Search by name or class" autocomplete="off" spellcheck="false" />
         <kbd class="search-hint" aria-hidden="true">/</kbd>
       </label>
-      <span class="result-count" id="result-count" aria-live="polite"></span>
       <button type="button" class="layout-toggle" id="layout-toggle" aria-pressed="false">
         <svg viewBox="0 0 8 8" aria-hidden="true">
           <rect x="0" y="1" width="4" height="6" /><rect x="5" y="1" width="3" height="2" />
@@ -33,14 +32,15 @@
         </svg>
         <span>Layout</span>
       </button>
+      <span class="result-count" id="result-count" aria-live="polite"></span>
     </div>
 
     <!-- Cards are built from characters.js by app.js -->
     <div class="card-grid" id="card-grid" role="listbox" aria-label="Characters"></div>
     <p class="no-results" id="no-results" hidden>No characters match your search.</p>
     <p class="view-hint" id="view-hint" hidden>
-      Search, or press <strong>Layout</strong> to see all <span class="hint-count"></span> characters.
-      Double-click to play.
+      Search to bring a character to the top, or press <strong>Layout</strong> to see all
+      <span class="hint-count"></span>. Double-click to play, right-click to flip.
     </p>
   </main>
 
@@ -55,30 +55,12 @@
     </div>
   </div>
 
-  <!-- Right-click (or long-press) a card: its equipment, inventory and backpack -->
-  <dialog class="slots-panel" id="slots-panel" aria-labelledby="slots-title">
-    <div class="slots-head">
-      <h2 class="slots-title" id="slots-title"></h2>
-      <button type="button" class="slots-close" id="slots-close" aria-label="Close">&times;</button>
-    </div>
-    <section class="slots-section" data-section="equipment">
-      <h3 class="slots-heading">Equipment</h3>
-      <div class="slot-grid slot-grid-4"></div>
-    </section>
-    <section class="slots-section" data-section="inventory">
-      <h3 class="slots-heading">Inventory</h3>
-      <div class="slot-grid"></div>
-    </section>
-    <section class="slots-section" data-section="backpack">
-      <h3 class="slots-heading">Backpack</h3>
-      <div class="slot-grid"></div>
-    </section>
-  </dialog>
-
   <!-- One card, cloned for each character -->
   <template id="card-template">
     <div class="card-unit">
     <button type="button" class="char-card" role="option" aria-selected="false">
+      <!-- Right-click (or hold on a phone) flips the card between its front and back -->
+      <span class="card-flip">
       <span class="card-inner">
         <span class="card-head">
           <span class="card-title">
@@ -93,6 +75,8 @@
         <span class="card-art"></span>
         <span class="card-abilities"></span>
         <span class="card-foot"></span>
+      </span>
+      <span class="card-face-back"></span>
       </span>
     </button>
     <!-- Layout mode: the back of the card (equipment, inventory, backpack), to its right -->

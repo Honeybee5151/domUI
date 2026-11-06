@@ -2,9 +2,11 @@
  * Character select screen: builds one trading card per character.
  *   click / tap            select
  *   double-click / -tap    play (enter the world) — fires a "characterplay" event
- *   right-click / hold     equipment, inventory and backpack
+ *   right-click / hold     flip the card to its back (equipment, inventory, backpack)
+ *                          and right-click again to flip it back
  *   On open only the most recently played character is shown. To see the others:
- *   search box             filter by name or class ("/" to focus, Esc to clear)
+ *   search box             in the deck: brings the best match to the top (Enter plays it);
+ *                          laid out: narrows the cards down ("/" to focus, Esc to clear)
  *   Layout button          lay out every character, with the back of its card (equipment,
  *                          inventory, backpack) beside it
  */
@@ -226,6 +228,8 @@
       sec("backpack").classList.add("is-empty");
       sec("backpack").textContent = "No backpack";
     }
+    // The same back, on the reverse side of the card itself (shown by flipping it)
+    card.querySelector(".card-face-back").appendChild(back.querySelector(".back-inner").cloneNode(true));
 
     return unit;
   }
@@ -243,6 +247,14 @@
     const isShown = (i) => !units[i].hidden;
     // Visible cards in on-screen order
     const shownIndexes = () => [...grid.children].map((u) => Number(u.querySelector(".char-card").dataset.index)).filter(isShown);
+
+    function markSelected(index) {
+      selected = index;
+      cards.forEach((card, i) => {
+        card.classList.toggle("is-selected", i === index);
+        card.setAttribute("aria-selected", String(i === index));
+      });
+    }
 
     function select(index, { scroll = true } = {}) {
       if (index < 0 || index >= cards.length) return;
@@ -387,7 +399,7 @@
     /**
      * Two views:
      *   - deck: every card stacked like a deck, the most recently played on top
-     *   - laid out (Layout button, or while searching): the cards dealt into rows, most
+     *   - laid out (Layout button only): the cards dealt into rows, most
      *     recent first, each with the back of its card beside it; scroll for more
      */
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -399,6 +411,31 @@
       return characters
         .map((_, i) => i)
         .sort((a, b) => ((characters[b].lastPlayed || "") > (characters[a].lastPlayed || "") ? 1 : -1));
+    }
+
+    /**
+     * How well a character matches the search (higher is better, 0 is no match):
+     * name starts with it > a word in the name starts with it > name contains it > class
+     */
+    function matchScore(i, q) {
+      if (!q) return 0;
+      const name = characters[i].name.toLowerCase();
+      const cls = String(characters[i].class).toLowerCase();
+      if (name === q) return 5;
+      if (name.startsWith(q)) return 4;
+      if (name.split(/\s+/).some((w) => w.startsWith(q))) return 3;
+      if (name.includes(q)) return 2;
+      if (cls.startsWith(q) || cls.includes(q)) return 1;
+      return 0;
+    }
+
+    /** Deck order: best search match on top, then by last played. */
+    function deckOrder() {
+      const q = search.value.trim().toLowerCase();
+      const recency = byRecency();
+      if (!q) return recency;
+      const rank = new Map(recency.map((i, r) => [i, r]));
+      return [...recency].sort((a, b) => matchScore(b, q) - matchScore(a, q) || rank.get(a) - rank.get(b));
     }
 
     // A slightly messy but stable fan for each depth in the deck
@@ -418,13 +455,15 @@
 
     /** Put the cards in recency order and mark which are shown, without animating. */
     function arrange(toDeck) {
-      const order = byRecency();
+      const q0 = search.value.trim().toLowerCase();
+      const order = toDeck ? deckOrder() : byRecency();
       order.forEach((i) => grid.appendChild(units[i]));
       grid.classList.toggle("is-deck", toDeck);
       grid.classList.toggle("is-layout", !toDeck);
       let shown = 0;
       order.forEach((i, depth) => {
         const u = units[i];
+        // The deck always holds every card; laid out, the search narrows them down
         const visible = toDeck || matchesSearch(i);
         u.hidden = !visible;
         if (visible) shown++;
@@ -434,10 +473,24 @@
         u.querySelector(".card-back").setAttribute("aria-hidden", String(toDeck));
       });
       deckView = toDeck;
-      layoutBtn.setAttribute("aria-pressed", String(!toDeck && !search.value.trim()));
+      // Laid out, every card shows its front (its back is beside it)
+      if (!toDeck) {
+        cards.forEach((card) => {
+          card.classList.remove("is-flipped");
+          card.querySelector(".card-inner").removeAttribute("aria-hidden");
+          card.querySelector(".card-face-back").setAttribute("aria-hidden", "true");
+        });
+      }
+      layoutBtn.setAttribute("aria-pressed", String(!toDeck));
       hint.hidden = !toDeck;
       const q = search.value.trim();
-      countEl.textContent = toDeck ? "Last played" : q ? `${shown} of ${characters.length}` : `${characters.length} characters`;
+      if (toDeck) {
+        const top = order[0];
+        const hit = q && matchScore(top, q0) > 0;
+        countEl.textContent = !q ? "Last played" : hit ? `Best match: ${characters[top].name}` : "No match";
+      } else {
+        countEl.textContent = q ? `${shown} of ${characters.length}` : `${characters.length} characters`;
+      }
       noResults.hidden = toDeck || shown > 0;
       // Keep one visible card in the tab order: the top of the deck, or the selection
       const visibleIdx = order.filter((i) => !units[i].hidden);
@@ -517,11 +570,27 @@
     }
 
     function applyView() {
-      const wantDeck = !search.value.trim() && layoutBtn.dataset.on !== "true";
+      // Only the Layout button deals the cards out; searching never does
+      const wantDeck = layoutBtn.dataset.on !== "true";
       if (wantDeck !== deckView) setView(wantDeck);
       else arrange(wantDeck);
     }
-    const applySearch = applyView;
+    function applySearch() {
+      const before = deckView ? grid.querySelector(".card-unit.is-top") : null;
+      applyView();
+      if (deckView) {
+        const top = grid.querySelector(".card-unit.is-top");
+        const idx = Number(top.querySelector(".char-card").dataset.index);
+        markSelected(idx);
+        // The new top card pops up from the deck
+        if (top !== before && !reduceMotion) {
+          top.animate(
+            [{ transform: "translate(0, 14px) scale(0.96)", opacity: 0.6 }, { transform: "none", opacity: 1 }],
+            { duration: 220, easing: "ease-out" }
+          );
+        }
+      }
+    }
 
     search.addEventListener("input", applySearch);
     search.addEventListener("keydown", (e) => {
@@ -530,6 +599,11 @@
         e.stopPropagation();
         search.value = "";
         applySearch();
+      } else if (e.key === "Enter" && deckView) {
+        // In the deck, Enter plays the best match on top
+        e.preventDefault();
+        const top = grid.querySelector(".card-unit.is-top .char-card");
+        if (top) play(Number(top.dataset.index));
       } else if (e.key === "Enter" || e.key === "ArrowDown") {
         // Jump from the search box to the first matching card
         const visible = shownIndexes();
@@ -553,37 +627,27 @@
     layoutBtn.addEventListener("click", () => {
       const on = layoutBtn.dataset.on !== "true";
       layoutBtn.dataset.on = String(on);
-      if (!on && search.value) search.value = "";
       applyView();
     });
 
-    // ---- Right-click / long-press: equipment, inventory and backpack ----
-    const panel = document.getElementById("slots-panel");
-    const counts = window.SLOT_COUNTS;
-
-    function openSlots(index) {
-      const c = characters[index];
-      const sign = findSign(c.birthsign);
-      panel.style.setProperty("--sign-color", sign.color);
-      panel.style.setProperty("--sign-shade", sign.shade);
-      panel.querySelector(".slots-title").textContent = c.name;
-
-      const sec = (name) => panel.querySelector(`[data-section="${name}"]`);
-      fillSlots(sec("equipment").querySelector(".slot-grid"), c.equipment, counts.equipment, window.EQUIPMENT_SLOT_NAMES);
-      fillSlots(sec("inventory").querySelector(".slot-grid"), c.inventory, counts.inventory);
-      const hasBackpack = Array.isArray(c.backpack);
-      sec("backpack").hidden = !hasBackpack;
-      if (hasBackpack) fillSlots(sec("backpack").querySelector(".slot-grid"), c.backpack, counts.backpack);
-
-      if (!panel.open) panel.showModal();
+    // ---- Right-click / long-press: flip the card to its back, and back again ----
+    function flip(index) {
+      const card = cards[index];
+      const flipped = !card.classList.contains("is-flipped");
+      card.classList.toggle("is-flipped", flipped);
+      card.querySelector(".card-inner").setAttribute("aria-hidden", String(flipped));
+      card.querySelector(".card-face-back").setAttribute("aria-hidden", String(!flipped));
     }
+    cards.forEach((card) => card.querySelector(".card-face-back").setAttribute("aria-hidden", "true"));
 
     grid.addEventListener("contextmenu", (e) => {
       const card = e.target.closest(".char-card");
       if (!card) return;
       e.preventDefault();
-      select(Number(card.dataset.index));
-      openSlots(Number(card.dataset.index));
+      // Laid out, the back is already shown beside every card: no flipping
+      if (!deckView) return;
+      select(Number(card.dataset.index), { scroll: false });
+      flip(Number(card.dataset.index));
     });
 
     // Phones: hold a finger on a card for half a second
@@ -591,21 +655,20 @@
     let pressStart = null;
     grid.addEventListener("touchstart", (e) => {
       const card = e.target.closest(".char-card");
-      if (!card || e.touches.length !== 1) return;
+      if (!card || e.touches.length !== 1 || !deckView) return;
       pressStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       pressTimer = setTimeout(() => {
         pressTimer = null;
         longPressFired = true;
-        select(Number(card.dataset.index));
-        openSlots(Number(card.dataset.index));
+        select(Number(card.dataset.index), { scroll: false });
+        flip(Number(card.dataset.index));
       }, 500);
     }, { passive: true });
     const cancelPress = () => {
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = null;
     };
-    // Lifting the finger after a long-press would send a click that lands on the
-    // backdrop and closes the panel straight away: swallow it.
+    // Lifting the finger after a long-press would also count as a tap: swallow it.
     let longPressFired = false;
     grid.addEventListener("touchend", (e) => {
       cancelPress();
@@ -620,15 +683,6 @@
       const t = e.touches[0];
       if (Math.hypot(t.clientX - pressStart.x, t.clientY - pressStart.y) > 10) cancelPress();
     }, { passive: true });
-
-    document.getElementById("slots-close").addEventListener("click", () => panel.close());
-    // Clicking the dimmed backdrop (outside the panel) closes it; Esc is built into <dialog>
-    panel.addEventListener("click", (e) => {
-      if (e.target === panel) panel.close();
-    });
-    panel.addEventListener("close", () => {
-      if (selected >= 0) cards[selected].focus({ preventScroll: true });
-    });
 
     // Start with the deck, the most recently played character on top
     arrange(true);
