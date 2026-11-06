@@ -367,7 +367,10 @@ body.in-create .ambient {
 /* Cards under the top one are a touch darker, like the edges of a deck */
 .card-grid.is-deck .card-unit:not(.is-top) .char-card {
   filter: brightness(0.82);
-  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 2px 0 #0008;
+}
+
+.card-grid.is-deck .card-unit:not(.is-top) .card-inner {
+  box-shadow: 0 2px 0 #0008;
 }
 
 .card-grid.is-deck .card-unit.is-top .char-card:not(.is-launching):not(:hover) {
@@ -392,11 +395,12 @@ body.in-create .ambient {
 .char-card {
   width: var(--card-w);
   aspect-ratio: 63 / 88;
-  padding: 5px;
+  padding: 0;
   border: 0;
   border-radius: 12px;
-  background: var(--frame);
-  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 6px 0 #0006;
+  /* the frame lives on the front and back faces, so the whole card turns when flipped */
+  background: transparent;
+  box-shadow: none;
   font: inherit;
   color: #1e1a17;
   cursor: pointer;
@@ -426,10 +430,20 @@ body.in-create .ambient {
   -webkit-backface-visibility: hidden;
 }
 
+.card-inner,
 .card-face-back {
   position: absolute;
   inset: 0;
+  border-radius: 12px;
+  outline: 2px solid var(--frame-dark);
+  outline-offset: -2px;
+  box-shadow: 0 6px 0 #0006;
+}
+
+.card-face-back {
   display: block;
+  padding: 5px;
+  background: var(--frame);
   transform: rotateY(180deg);
 }
 
@@ -440,11 +454,12 @@ body.in-create .ambient {
 
 /* Card face: a soft gradient of the sign colour, light at the top, deeper at the bottom */
 .card-inner {
-  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0 7px 5px;
-  border-radius: 8px;
+  /* the 5px frame in the sign's colour, around the card face */
+  border: 5px solid var(--frame);
+  background-clip: padding-box;
   background:
     radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, #fff 55%, transparent), transparent 70%),
     linear-gradient(
@@ -755,7 +770,13 @@ body.in-create .ambient {
 
 .char-card.is-selected {
   transform: translateY(-8px) scale(1.04);
-  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
+}
+
+/* The white ring and glow sit on the faces, so they turn with the card when it flips */
+.char-card.is-selected .card-inner,
+.char-card.is-selected .card-face-back,
+.class-slide.is-current .card-inner {
+  box-shadow: 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
 }
 
 /* --------------------------------------------------------------------------
@@ -1039,9 +1060,6 @@ body.in-create .ambient {
   pointer-events: none;
 }
 
-.class-slide.is-current .char-card {
-  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
-}
 
 .class-dots {
   display: flex;
@@ -1214,7 +1232,11 @@ body.in-create .ambient {
 
 .char-card.is-launching {
   transform: translateY(-8px) scale(1.08);
-  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 40px 14px var(--frame), 0 10px 0 #0006;
+}
+
+.char-card.is-launching .card-inner,
+.char-card.is-launching .card-face-back {
+  box-shadow: 0 0 0 4px #fff, 0 0 40px 14px var(--frame), 0 10px 0 #0006;
 }
 
 .play-overlay {

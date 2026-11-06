@@ -555,10 +555,72 @@
       return order;
     }
 
-    /** Switch between the deck and the laid-out rows (instantly, like Vault mode). */
+    const centerOf = (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width };
+    };
+
+    /**
+     * Switch views with a deal / gather animation: each card flies from where it was
+     * to where it ends up (FLIP), one after another.
+     */
     function setView(toDeck) {
       const wasDeck = deckView;
-      arrange(toDeck);
+      if (reduceMotion) {
+        arrange(toDeck);
+        return;
+      }
+      // First: where every card is now
+      const before = units.map((u) => (u.hidden ? null : centerOf(u.querySelector(".char-card"))));
+      const order = arrange(toDeck);
+      // Last: where they end up; then animate from first to last
+      const maxStagger = 600;
+      const step = Math.min(35, maxStagger / Math.max(1, order.length));
+      order.forEach((i, rank) => {
+        const u = units[i];
+        if (u.hidden) return;
+        const card = u.querySelector(".char-card");
+        const from = before[i];
+        if (wasDeck && !toDeck) {
+          // Dealing out: animate the card from its spot in the deck
+          const to = centerOf(card);
+          const start = from || to;
+          const depth = Math.min(rank, DECK_LAYERS);
+          const r = deckTransform(depth).r;
+          const scale = start.w / to.w;
+          card.animate(
+            [
+              { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) rotate(${r}deg) scale(${scale})`, zIndex: 60 },
+              { transform: "none", zIndex: 60 }
+            ],
+            { duration: 520, delay: rank * step, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" }
+          );
+          // ...and its back slides out from behind it
+          u.querySelector(".card-back").animate(
+            [
+              { transform: "translateX(-60%) scale(0.9)", opacity: 0 },
+              { transform: "none", opacity: 1 }
+            ],
+            { duration: 380, delay: rank * step + 380, easing: "ease-out", fill: "backwards" }
+          );
+        } else if (!wasDeck && toDeck) {
+          // Gathering up: animate the whole unit from its spot in the rows into the deck
+          if (!from) return;
+          const depth = Math.min(rank, DECK_LAYERS);
+          const final = deckTransform(depth);
+          const now = centerOf(card); // includes the deck transform
+          const base = { x: now.x - final.x, y: now.y - final.y }; // deck spot without the fan
+          const scale = from.w / now.w;
+          const delay = (Math.min(order.length, 40) - Math.min(rank, 40)) * Math.min(step, 15);
+          u.animate(
+            [
+              { transform: `translate(${from.x - base.x}px, ${from.y - base.y}px) rotate(0deg) scale(${scale})` },
+              { transform: tf(final) }
+            ],
+            { duration: 480, delay, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" }
+          );
+        }
+      });
       if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
     }
 
@@ -622,6 +684,22 @@
       layoutBtn.dataset.on = String(on);
       applyView();
     });
+
+    // ---- Entry animations shared by Vault and New character ----
+    function staggerIn(elements, frames, { step = 22, max = 500, duration = 380 } = {}) {
+      if (reduceMotion) return;
+      elements.forEach((el, i) => {
+        el.animate(frames, { duration, delay: Math.min(i * step, max), easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" });
+      });
+    }
+    function popTopCard() {
+      const top = grid.querySelector(".card-unit.is-top");
+      if (!top || reduceMotion) return;
+      top.animate(
+        [{ transform: `${top.style.transform} translateY(24px) scale(0.92)`, opacity: 0 }, { transform: top.style.transform, opacity: 1 }],
+        { duration: 340, easing: "cubic-bezier(.2,.8,.25,1)" }
+      );
+    }
 
     // ---- Vault mode: card backs on the left, the vault's chests on the right ----
     const vaultBtn = document.getElementById("vault-toggle");
@@ -730,8 +808,18 @@
       document.body.classList.toggle("in-vault", on);
       if (on) {
         renderVault();
+        // Card backs flip into view one after another; the chests slide in from the right
+        staggerIn([...vaultChars.children], [
+          { transform: "perspective(700px) rotateY(-90deg)", opacity: 0 },
+          { transform: "perspective(700px) rotateY(0deg)", opacity: 1 }
+        ]);
+        staggerIn([...vaultChests.children], [
+          { transform: "translateX(40px)", opacity: 0 },
+          { transform: "none", opacity: 1 }
+        ], { step: 30 });
       } else {
         arrange(deckView);
+        if (deckView) popTopCard();
       }
     }
 
@@ -1021,10 +1109,23 @@
         markSign();
         drawPreviews();
         nameInput.focus({ preventScroll: true });
+        // The class cards fan out from the middle, nearest first; the form rises in
+        const visibleSlides = previews
+          .filter((sl) => !sl.classList.contains("is-far"))
+          .sort((x, y) => Number(x.style.getPropertyValue("--abs")) - Number(y.style.getPropertyValue("--abs")));
+        staggerIn(visibleSlides.map((sl) => sl.firstElementChild), [
+          { transform: "translateY(30px) scale(0.85)", opacity: 0 },
+          { transform: "none", opacity: 1 }
+        ], { step: 70, duration: 420 });
+        staggerIn([...createScreen.querySelectorAll(".class-dots, .create-field, .create-confirm")], [
+          { transform: "translateY(16px)", opacity: 0 },
+          { transform: "none", opacity: 1 }
+        ], { step: 60, duration: 360 });
       } else {
         grid.hidden = false;
         layoutBtn.dataset.on = "false";
         arrange(true);
+        popTopCard();
       }
     }
 
