@@ -41,6 +41,8 @@ body {
 /* The whole screen is the card grid, with a slim toolbar on top */
 .select-screen {
   min-height: 100vh;
+  /* hidden hover labels near the right edge must not make the page scroll sideways */
+  overflow-x: clip;
   padding: 0 clamp(0.75rem, 2vw, 1.5rem) 2rem;
   display: flex;
   flex-direction: column;
@@ -196,63 +198,127 @@ body {
   display: none;
 }
 
-.side-pack {
+/* Layout mode: the back of the card sits to the right of it, same size and frame */
+.card-back {
   display: none;
 }
 
-.card-grid.is-layout .side-pack {
-  --slot: calc(var(--card-w) * 0.27);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 10px;
-  background: #1e1b2b;
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 60%, #3d3856);
+.card-grid.is-layout .card-back {
+  /* 4 slots across the back's inner width */
+  --slot: calc((var(--card-w) - 10px - 14px - 3 * 4px) / 4 * 0.9);
+  display: block;
+  width: var(--card-w);
+  aspect-ratio: 63 / 88;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--sign-color);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #14121c), 0 6px 0 #0006;
 }
 
-.side-pack-title {
-  color: color-mix(in srgb, var(--sign-color) 60%, var(--ink));
-  font-size: 0.62rem;
+.back-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 7px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2a2639, #1e1b2b);
+  color: var(--ink);
+}
+
+.back-name {
+  font-size: clamp(0.66rem, 0.9vw, 0.8rem);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--sign-color) 55%, var(--ink));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.back-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.back-heading {
+  color: #ffffff8c;
+  font-size: clamp(0.48rem, 0.6vw, 0.56rem);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-/* 8 backpack slots in 2 columns, the same height as the card */
-.side-pack-grid {
+.back-grid {
   display: grid;
-  grid-template-columns: repeat(2, var(--slot));
+  justify-content: center;
+  grid-template-columns: repeat(4, var(--slot));
   grid-auto-rows: var(--slot);
-  gap: 5px;
+  gap: 4px;
 }
 
-.side-pack.is-empty .side-pack-grid {
+.back-grid.is-empty {
   display: grid;
   place-items: center;
-  width: calc(var(--slot) * 2 + 5px);
-  flex: 1;
-  border-radius: 6px;
-  background: #2c2840;
+  height: calc(var(--slot) * 2 + 4px);
+  border-radius: 5px;
+  background: #ffffff0d;
   color: #ffffff4d;
-  font-size: 0.7rem;
-  text-align: center;
+  font-size: 0.62rem;
 }
 
-.side-pack .slot {
+.card-back .slot {
   width: var(--slot);
   height: var(--slot);
+  border-radius: 4px;
 }
 
-/* Default view: just the last played character, a little larger, in the middle */
-.card-grid.is-single {
-  flex: 1;
-  align-content: center;
+/* Empty equipment slot labels are tiny on the back */
+.card-back .slot[data-slot-label]::before {
+  font-size: 0.4rem;
+}
+
+.card-back [data-section="equipment"] .slot {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 55%, #3d3856), inset 0 3px 0 #0003;
+}
+
+/* --------------------------------------------------------------------------
+   Deck view: every card stacked, the most recently played on top
+   -------------------------------------------------------------------------- */
+
+.card-grid.is-deck {
   --card-w: clamp(220px, 26vw, 280px);
+  flex: 1;
+  position: relative;
+  display: block;
+  min-height: calc(var(--card-w) * 88 / 63 + 90px);
 }
 
-.card-grid.is-single .char-card {
-  font-size: 1.15em;
+/* All cards sit on the same spot in the middle; app.js fans each layer a little */
+.card-grid.is-deck .card-unit {
+  position: absolute;
+  left: calc(50% - var(--card-w) / 2);
+  top: calc(50% - var(--card-w) * 44 / 63 - 20px);
+  pointer-events: none;
+}
+
+/* Only the top card can be clicked, played or right-clicked */
+.card-grid.is-deck .card-unit.is-top {
+  pointer-events: auto;
+}
+
+/* Cards under the top one are a touch darker, like the edges of a deck */
+.card-grid.is-deck .card-unit:not(.is-top) .char-card {
+  filter: brightness(0.82);
+  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 2px 0 #0008;
+}
+
+.card-grid.is-deck .card-unit.is-top .char-card:not(.is-launching):not(:hover) {
+  transform: none;
+}
+
+.card-grid.is-deck .card-back {
+  display: none;
 }
 
 .view-hint {
@@ -883,5 +949,12 @@ body {
 
   .search-hint {
     display: none;
+  }
+}
+
+/* Phones in Layout mode: one card and its back per row, filling the width */
+@media (max-width: 480px) {
+  .card-grid.is-layout {
+    --card-w: calc((100vw - 1.5rem - 8px) / 2);
   }
 }

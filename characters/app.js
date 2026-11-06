@@ -5,7 +5,8 @@
  *   right-click / hold     equipment, inventory and backpack
  *   On open only the most recently played character is shown. To see the others:
  *   search box             filter by name or class ("/" to focus, Esc to clear)
- *   Layout button          lay out every character, with its backpack beside its card
+ *   Layout button          lay out every character, with the back of its card (equipment,
+ *                          inventory, backpack) beside it
  */
 (function () {
   "use strict";
@@ -210,15 +211,20 @@
       art.appendChild(placeholderArt());
     }
 
-    // Layout mode: backpack slots beside the card
+    // Layout mode: the back of the card, with every slot
     unit.style.setProperty("--sign-color", sign.color);
     unit.style.setProperty("--sign-shade", sign.shade);
-    const pack = unit.querySelector(".side-pack");
+    const back = unit.querySelector(".card-back");
+    back.querySelector(".back-name").textContent = character.name;
+    const counts = window.SLOT_COUNTS;
+    const sec = (name) => back.querySelector(`[data-section="${name}"] .back-grid`);
+    fillSlots(sec("equipment"), character.equipment, counts.equipment, window.EQUIPMENT_SLOT_NAMES);
+    fillSlots(sec("inventory"), character.inventory, counts.inventory);
     if (Array.isArray(character.backpack)) {
-      fillSlots(pack.querySelector(".side-pack-grid"), character.backpack, window.SLOT_COUNTS.backpack);
+      fillSlots(sec("backpack"), character.backpack, counts.backpack);
     } else {
-      pack.classList.add("is-empty");
-      pack.querySelector(".side-pack-grid").textContent = "No backpack";
+      sec("backpack").classList.add("is-empty");
+      sec("backpack").textContent = "No backpack";
     }
 
     return unit;
@@ -235,7 +241,8 @@
 
     let selected = -1;
     const isShown = (i) => !units[i].hidden;
-    const shownIndexes = () => cards.map((_, i) => i).filter(isShown);
+    // Visible cards in on-screen order
+    const shownIndexes = () => [...grid.children].map((u) => Number(u.querySelector(".char-card").dataset.index)).filter(isShown);
 
     function select(index, { scroll = true } = {}) {
       if (index < 0 || index >= cards.length) return;
@@ -283,7 +290,7 @@
       overlay.classList.remove("is-on");
       overlay.hidden = true;
       cards.forEach((card) => card.classList.remove("is-launching"));
-      applyView();
+      arrange(deckView);
       if (selected >= 0 && !units[selected].hidden) cards[selected].focus({ preventScroll: true });
     }
 
@@ -343,6 +350,7 @@
     const countEl = document.getElementById("result-count");
     const noResults = document.getElementById("no-results");
     const hint = document.getElementById("view-hint");
+    const layoutBtn = document.getElementById("layout-toggle");
     hint.querySelector(".hint-count").textContent = String(characters.length);
 
     // Which character was played last: saved in this browser when you play, otherwise
@@ -377,37 +385,141 @@
     }
 
     /**
-     * What's on screen:
-     *   - normally just the most recently played character
-     *   - while searching, every character that matches
-     *   - with Layout on, everyone (still filtered by the search), backpacks beside them
+     * Two views:
+     *   - deck: every card stacked like a deck, the most recently played on top
+     *   - laid out (Layout button, or while searching): the cards dealt into rows, most
+     *     recent first, each with the back of its card beside it; scroll for more
      */
-    function applyView() {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const DECK_LAYERS = 6; // how many cards visibly fan out under the top one
+    let deckView = true;
+
+    /** Character indexes sorted by last played, most recent first. */
+    function byRecency() {
+      return characters
+        .map((_, i) => i)
+        .sort((a, b) => ((characters[b].lastPlayed || "") > (characters[a].lastPlayed || "") ? 1 : -1));
+    }
+
+    // A slightly messy but stable fan for each depth in the deck
+    function deckTransform(depth) {
+      if (depth === 0) return { x: 0, y: 0, r: 0 };
+      const d = Math.min(depth, DECK_LAYERS);
+      const tilt = [0, -2.5, 2, -1.5, 3, -3, 1.5][d];
+      return { x: d * 3 - (d % 2 ? 2 : 0), y: d * 5, r: tilt };
+    }
+    const tf = ({ x, y, r }) => `translate(${x}px, ${y}px) rotate(${r}deg)`;
+
+    function matchesSearch(i) {
       const q = search.value.trim().toLowerCase();
-      const layoutOn = grid.classList.contains("is-layout");
-      const recent = mostRecentIndex();
-      const single = !q && !layoutOn;
+      const c = characters[i];
+      return !q || c.name.toLowerCase().includes(q) || String(c.class).toLowerCase().includes(q);
+    }
+
+    /** Put the cards in recency order and mark which are shown, without animating. */
+    function arrange(toDeck) {
+      const order = byRecency();
+      order.forEach((i) => grid.appendChild(units[i]));
+      grid.classList.toggle("is-deck", toDeck);
+      grid.classList.toggle("is-layout", !toDeck);
       let shown = 0;
-      characters.forEach((c, i) => {
-        const match = single
-          ? i === recent
-          : !q || c.name.toLowerCase().includes(q) || String(c.class).toLowerCase().includes(q);
-        units[i].hidden = !match;
-        if (match) shown++;
+      order.forEach((i, depth) => {
+        const u = units[i];
+        const visible = toDeck || matchesSearch(i);
+        u.hidden = !visible;
+        if (visible) shown++;
+        u.style.zIndex = toDeck ? String(order.length - depth) : "";
+        u.style.transform = toDeck ? tf(deckTransform(depth)) : "";
+        u.classList.toggle("is-top", toDeck && depth === 0);
+        u.querySelector(".card-back").setAttribute("aria-hidden", String(toDeck));
       });
-      grid.classList.toggle("is-single", single);
-      hint.hidden = !single;
-      if (single) {
-        countEl.textContent = "Last played";
-      } else {
-        countEl.textContent = q ? `${shown} of ${characters.length}` : `${characters.length} characters`;
-      }
-      noResults.hidden = shown > 0;
-      // Keep one visible card in the tab order
-      const visible = shownIndexes();
+      deckView = toDeck;
+      layoutBtn.setAttribute("aria-pressed", String(!toDeck && !search.value.trim()));
+      hint.hidden = !toDeck;
+      const q = search.value.trim();
+      countEl.textContent = toDeck ? "Last played" : q ? `${shown} of ${characters.length}` : `${characters.length} characters`;
+      noResults.hidden = toDeck || shown > 0;
+      // Keep one visible card in the tab order: the top of the deck, or the selection
+      const visibleIdx = order.filter((i) => !units[i].hidden);
       cards.forEach((card) => (card.tabIndex = -1));
-      const keep = visible.includes(selected) ? selected : visible[0];
+      const keep = toDeck ? order[0] : visibleIdx.includes(selected) ? selected : visibleIdx[0];
       if (keep != null) cards[keep].tabIndex = 0;
+      return order;
+    }
+
+    const centerOf = (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width };
+    };
+
+    /**
+     * Switch views with a deal / gather animation: each card flies from where it was
+     * to where it ends up (FLIP), one after another.
+     */
+    function setView(toDeck) {
+      const wasDeck = deckView;
+      if (reduceMotion) {
+        arrange(toDeck);
+        return;
+      }
+      // First: where every card is now
+      const before = units.map((u) => (u.hidden ? null : centerOf(u.querySelector(".char-card"))));
+      const order = arrange(toDeck);
+      // Last: where they end up; then animate from first to last
+      const maxStagger = 600;
+      const step = Math.min(35, maxStagger / Math.max(1, order.length));
+      order.forEach((i, rank) => {
+        const u = units[i];
+        if (u.hidden) return;
+        const card = u.querySelector(".char-card");
+        const from = before[i];
+        if (wasDeck && !toDeck) {
+          // Dealing out: animate the card from its spot in the deck
+          const to = centerOf(card);
+          const start = from || to;
+          const depth = Math.min(rank, DECK_LAYERS);
+          const r = deckTransform(depth).r;
+          const scale = start.w / to.w;
+          card.animate(
+            [
+              { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) rotate(${r}deg) scale(${scale})`, zIndex: 60 },
+              { transform: "none", zIndex: 60 }
+            ],
+            { duration: 520, delay: rank * step, easing: "cubic-bezier(.2,.8,.25,1)", fill: "backwards" }
+          );
+          // ...and its back slides out from behind it
+          u.querySelector(".card-back").animate(
+            [
+              { transform: "translateX(-60%) scale(0.9)", opacity: 0 },
+              { transform: "none", opacity: 1 }
+            ],
+            { duration: 380, delay: rank * step + 380, easing: "ease-out", fill: "backwards" }
+          );
+        } else if (!wasDeck && toDeck) {
+          // Gathering up: animate the whole unit from its spot in the rows into the deck
+          if (!from) return;
+          const depth = Math.min(rank, DECK_LAYERS);
+          const final = deckTransform(depth);
+          const now = centerOf(card); // includes the deck transform
+          const base = { x: now.x - final.x, y: now.y - final.y }; // deck spot without the fan
+          const scale = from.w / now.w;
+          const delay = (Math.min(order.length, 40) - Math.min(rank, 40)) * Math.min(step, 15);
+          u.animate(
+            [
+              { transform: `translate(${from.x - base.x}px, ${from.y - base.y}px) rotate(0deg) scale(${scale})` },
+              { transform: tf(final) }
+            ],
+            { duration: 480, delay, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" }
+          );
+        }
+      });
+      if (wasDeck && !toDeck) window.scrollTo({ top: 0 });
+    }
+
+    function applyView() {
+      const wantDeck = !search.value.trim() && layoutBtn.dataset.on !== "true";
+      if (wantDeck !== deckView) setView(wantDeck);
+      else arrange(wantDeck);
     }
     const applySearch = applyView;
 
@@ -423,7 +535,8 @@
         const visible = shownIndexes();
         if (visible.length) {
           e.preventDefault();
-          select(visible.includes(selected) ? selected : visible[0]);
+          const order = byRecency().filter((i) => !units[i].hidden);
+          select(order.includes(selected) ? selected : order[0]);
         }
       }
     });
@@ -436,15 +549,12 @@
       }
     });
 
-    // ---- Layout: show each character's backpack to the right of its card ----
-    const layoutBtn = document.getElementById("layout-toggle");
+    // ---- Layout: deal the deck out (and gather it back up) ----
     layoutBtn.addEventListener("click", () => {
-      const on = layoutBtn.getAttribute("aria-pressed") !== "true";
-      layoutBtn.setAttribute("aria-pressed", String(on));
-      grid.classList.toggle("is-layout", on);
-      units.forEach((u) => u.querySelector(".side-pack").setAttribute("aria-hidden", String(!on)));
+      const on = layoutBtn.dataset.on !== "true";
+      layoutBtn.dataset.on = String(on);
+      if (!on && search.value) search.value = "";
       applyView();
-      if (selected >= 0 && !units[selected].hidden) cards[selected].scrollIntoView({ block: "nearest" });
     });
 
     // ---- Right-click / long-press: equipment, inventory and backpack ----
@@ -520,10 +630,10 @@
       if (selected >= 0) cards[selected].focus({ preventScroll: true });
     });
 
-    // Start on the most recently played character
-    applyView();
+    // Start with the deck, the most recently played character on top
+    arrange(true);
     if (characters.length) {
-      const recent = mostRecentIndex();
+      const recent = byRecency()[0];
       cards[recent].classList.add("is-selected");
       cards[recent].setAttribute("aria-selected", "true");
       selected = recent;

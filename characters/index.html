@@ -95,10 +95,23 @@
         <span class="card-foot"></span>
       </span>
     </button>
-    <!-- Layout mode: the character's backpack, to the right of the card -->
-    <div class="side-pack" aria-hidden="true">
-      <span class="side-pack-title">Backpack</span>
-      <span class="side-pack-grid"></span>
+    <!-- Layout mode: the back of the card (equipment, inventory, backpack), to its right -->
+    <div class="card-back" aria-hidden="true">
+      <span class="back-inner">
+        <span class="back-name"></span>
+        <span class="back-section" data-section="equipment">
+          <span class="back-heading">Equipment</span>
+          <span class="back-grid"></span>
+        </span>
+        <span class="back-section" data-section="inventory">
+          <span class="back-heading">Inventory</span>
+          <span class="back-grid"></span>
+        </span>
+        <span class="back-section" data-section="backpack">
+          <span class="back-heading">Backpack</span>
+          <span class="back-grid"></span>
+        </span>
+      </span>
     </div>
     </div>
   </template>

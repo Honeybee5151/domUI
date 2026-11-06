@@ -22,12 +22,28 @@
     }
     h1 { font-size: clamp(1.8rem, 5vw, 3rem); text-shadow: 3px 3px 0 #000; }
     p { margin-top: 0.75rem; color: rgba(244, 239, 230, 0.7); }
+    .enter {
+      display: inline-block;
+      margin-top: 1.75rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      background: #f4efe6;
+      box-shadow: 0 5px 0 #8f86c4;
+      color: #1e1b2b;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    .enter:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #8f86c4; }
+    .enter:active { transform: translateY(3px); box-shadow: 0 2px 0 #8f86c4; }
   </style>
 </head>
 <body>
   <main>
     <h1>Coming soon</h1>
     <p>Something is being built here.</p>
+    <a class="enter" href="/characters/">Enter domUI</a>
   </main>
 </body>
 </html>

@@ -75,6 +75,34 @@ const LAST_PLAYED = {
   Fenna: "2026-10-18T11:05", Rook: "2026-11-06T09:00"
 };
 
+// 30 more generated characters so the deck is full (same every load: seeded random)
+(function addGeneratedCharacters() {
+  let seed = 20261106;
+  const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const pick = (list) => list[Math.floor(rand() * list.length)];
+  const START = ["Al", "Bel", "Cor", "Da", "El", "Fa", "Gil", "Ha", "Ir", "Ka", "Lo", "Mi", "Nor", "Os", "Pa", "Ra", "Sel", "Ta", "Ul", "Va", "Wen", "Yr", "Za"];
+  const END = ["ric", "wyn", "dra", "mir", "ven", "nor", "lis", "thas", "rin", "dor", "ka", "sha", "len", "vik", "mund", "ra", "zel", "bek", "nia", "tor"];
+  const classes = Object.keys(KIT);
+  const used = new Set(ROSTER.map((r) => r[0]));
+  const pad = (n) => String(n).padStart(2, "0");
+  for (let i = 0; i < 30; i++) {
+    let name;
+    do {
+      name = pick(START) + pick(END);
+    } while (used.has(name));
+    used.add(name);
+    const cls = classes[i % classes.length];
+    const month = 1 + Math.floor(rand() * 10);
+    const created = `2026-${pad(month)}-${pad(1 + Math.floor(rand() * 28))}`;
+    ROSTER.push([name, cls, `sign-${1 + Math.floor(rand() * 8)}`, 1 + Math.floor(rand() * 20),
+      600 + Math.floor(rand() * 36) * 10, created, rand() < 0.45]);
+    // Played some time between its creation and today
+    const day = 1 + Math.floor(rand() * 27);
+    const pm = Math.min(10, month + Math.floor(rand() * 3));
+    LAST_PLAYED[name] = `2026-${pad(pm)}-${pad(day)}T${pad(8 + Math.floor(rand() * 14))}:${pad(Math.floor(rand() * 60))}`;
+  }
+})();
+
 window.CHARACTERS = ROSTER.map(([name, cls, birthsign, level, hp, created, hasBackpack]) => ({
   name,
   class: cls,
