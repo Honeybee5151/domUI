@@ -38,22 +38,144 @@ body {
   font-family: var(--font-pixel);
 }
 
+/* The whole screen is the card grid, with a slim toolbar on top */
 .select-screen {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: clamp(1.5rem, 5vh, 3.5rem) 1rem 2rem;
+  min-height: 100vh;
+  padding: 0 clamp(0.75rem, 2vw, 1.5rem) 2rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: clamp(1.25rem, 3vh, 2rem);
+  gap: clamp(0.9rem, 2vh, 1.25rem);
 }
 
-.select-title {
-  font-size: clamp(1.5rem, 3.5vw, 2.4rem);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-shadow: 3px 3px 0 #000;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
+
+/* --------------------------------------------------------------------------
+   Toolbar: search + layout toggle
+   -------------------------------------------------------------------------- */
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 calc(-1 * clamp(0.75rem, 2vw, 1.5rem));
+  padding: 10px clamp(0.75rem, 2vw, 1.5rem);
+  background: color-mix(in srgb, var(--bg-top) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 0 #ffffff12;
+}
+
+.search {
+  flex: 1;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #2c2840;
+  box-shadow: inset 0 0 0 2px #3d3856;
+  cursor: text;
+}
+
+.search:focus-within {
+  box-shadow: inset 0 0 0 2px #8f86c4;
+}
+
+.search-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  fill: var(--ink-dim);
+  shape-rendering: crispEdges;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.search input::placeholder {
+  color: #ffffff59;
+}
+
+.search input::-webkit-search-cancel-button {
+  filter: invert(1) opacity(0.5);
+}
+
+.search-hint {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #ffffff14;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.search:focus-within .search-hint {
+  display: none;
+}
+
+.result-count {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.layout-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #2c2840;
+  box-shadow: inset 0 0 0 2px #3d3856;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.layout-toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+
+.layout-toggle:hover {
+  background: #36314d;
+}
+
+.layout-toggle[aria-pressed="true"] {
+  background: #f4efe6;
+  box-shadow: none;
+  color: #1e1b2b;
+}
+
+/* --------------------------------------------------------------------------
+   Card grid (and Layout mode: backpack to the right of each card)
+   -------------------------------------------------------------------------- */
 
 /* Wrapping rows, each centred (so a short last row sits in the middle too) */
 .card-grid {
@@ -64,10 +186,94 @@ body {
   width: 100%;
 }
 
-.select-status {
-  min-height: 1.5em;
-  font-size: 1.15rem;
+.card-unit {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.card-unit[hidden] {
+  display: none;
+}
+
+.side-pack {
+  display: none;
+}
+
+.card-grid.is-layout .side-pack {
+  --slot: calc(var(--card-w) * 0.27);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #1e1b2b;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--sign-color) 60%, #3d3856);
+}
+
+.side-pack-title {
+  color: color-mix(in srgb, var(--sign-color) 60%, var(--ink));
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* 8 backpack slots in 2 columns, the same height as the card */
+.side-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(2, var(--slot));
+  grid-auto-rows: var(--slot);
+  gap: 5px;
+}
+
+.side-pack.is-empty .side-pack-grid {
+  display: grid;
+  place-items: center;
+  width: calc(var(--slot) * 2 + 5px);
+  flex: 1;
+  border-radius: 6px;
+  background: #2c2840;
+  color: #ffffff4d;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.side-pack .slot {
+  width: var(--slot);
+  height: var(--slot);
+}
+
+/* Default view: just the last played character, a little larger, in the middle */
+.card-grid.is-single {
+  flex: 1;
+  align-content: center;
+  --card-w: clamp(220px, 26vw, 280px);
+}
+
+.card-grid.is-single .char-card {
+  font-size: 1.15em;
+}
+
+.view-hint {
+  margin-bottom: 1rem;
   color: var(--ink-dim);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.view-hint strong {
+  color: var(--ink);
+}
+
+.view-hint[hidden] {
+  display: none;
+}
+
+.no-results {
+  margin-top: 2rem;
+  color: var(--ink-dim);
+  text-align: center;
 }
 
 /* --------------------------------------------------------------------------
@@ -511,16 +717,108 @@ body {
   transform: translate(-50%, 0);
 }
 
-.slots-total {
-  margin-top: 10px;
+/* --------------------------------------------------------------------------
+   Play: the chosen card glows, then the screen fades into "Entering the world"
+   -------------------------------------------------------------------------- */
+
+.char-card.is-launching {
+  transform: translateY(-8px) scale(1.08);
+  box-shadow: inset 0 0 0 2px var(--frame-dark), 0 0 0 4px #fff, 0 0 40px 14px var(--frame), 0 10px 0 #0006;
+}
+
+.play-overlay {
+  --sign-color: #8a8f99;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--sign-color) 35%, #0d0b14), #0d0b14 70%);
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+.play-overlay[hidden] {
+  display: none;
+}
+
+.play-overlay.is-on {
+  opacity: 1;
+}
+
+.play-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.play-kicker {
   color: var(--ink-dim);
-  font-size: 0.72rem;
-  text-align: right;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.play-title {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 700;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.play-sub {
+  color: color-mix(in srgb, var(--sign-color) 55%, var(--ink));
+  font-size: 1.05rem;
+}
+
+/* Simple loading bar while the world loads */
+.play-bar {
+  width: min(260px, 70vw);
+  height: 8px;
+  margin: 10px 0 14px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #ffffff1a;
+}
+
+.play-bar span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: var(--sign-color);
+  animation: play-load 1.1s ease-in-out infinite;
+}
+
+@keyframes play-load {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(290%); }
+}
+
+.play-back {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #ffffff14;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.play-back:hover {
+  background: #ffffff26;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .char-card {
+  .char-card,
+  .play-overlay {
     transition: none;
+  }
+
+  .play-bar span {
+    animation: none;
   }
 }
 
@@ -569,5 +867,21 @@ body {
 @media (max-width: 359px) {
   :root {
     --card-w: min(240px, calc(100vw - 2rem));
+  }
+}
+
+/* Phones: search on its own row, count + layout below */
+@media (max-width: 520px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .search-hint {
+    display: none;
   }
 }

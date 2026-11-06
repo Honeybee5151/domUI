@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Select</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="select-screen">
+    <h1 class="visually-hidden">Choose your character</h1>
+
+    <!-- Toolbar: find a character by name, and switch the layout -->
+    <div class="toolbar" role="search">
+      <label class="search">
+        <span class="visually-hidden">Search characters</span>
+        <svg class="search-icon" viewBox="0 0 8 8" aria-hidden="true">
+          <rect x="1" y="0" width="4" height="1" /><rect x="0" y="1" width="1" height="4" />
+          <rect x="5" y="1" width="1" height="4" /><rect x="1" y="5" width="4" height="1" />
+          <rect x="5" y="5" width="1" height="1" /><rect x="6" y="6" width="2" height="2" />
+        </svg>
+        <input type="search" id="search" placeholder="Search by name or class" autocomplete="off" spellcheck="false" />
+        <kbd class="search-hint" aria-hidden="true">/</kbd>
+      </label>
+      <span class="result-count" id="result-count" aria-live="polite"></span>
+      <button type="button" class="layout-toggle" id="layout-toggle" aria-pressed="false">
+        <svg viewBox="0 0 8 8" aria-hidden="true">
+          <rect x="0" y="1" width="4" height="6" /><rect x="5" y="1" width="3" height="2" />
+          <rect x="5" y="5" width="3" height="2" />
+        </svg>
+        <span>Layout</span>
+      </button>
+    </div>
+
+    <!-- Cards are built from characters.js by app.js -->
+    <div class="card-grid" id="card-grid" role="listbox" aria-label="Characters"></div>
+    <p class="no-results" id="no-results" hidden>No characters match your search.</p>
+    <p class="view-hint" id="view-hint" hidden>
+      Search, or press <strong>Layout</strong> to see all <span class="hint-count"></span> characters.
+      Double-click to play.
+    </p>
+  </main>
+
+  <!-- Double-click a card: enter the world with that character -->
+  <div class="play-overlay" id="play-overlay" hidden>
+    <div class="play-box" role="dialog" aria-modal="true" aria-labelledby="play-title">
+      <p class="play-kicker">Entering the world</p>
+      <h2 class="play-title" id="play-title"></h2>
+      <p class="play-sub" id="play-sub"></p>
+      <span class="play-bar" aria-hidden="true"><span></span></span>
+      <button type="button" class="play-back" id="play-back">Back to characters</button>
+    </div>
+  </div>
+
+  <!-- Right-click (or long-press) a card: its equipment, inventory and backpack -->
+  <dialog class="slots-panel" id="slots-panel" aria-labelledby="slots-title">
+    <div class="slots-head">
+      <h2 class="slots-title" id="slots-title"></h2>
+      <button type="button" class="slots-close" id="slots-close" aria-label="Close">&times;</button>
+    </div>
+    <section class="slots-section" data-section="equipment">
+      <h3 class="slots-heading">Equipment</h3>
+      <div class="slot-grid slot-grid-4"></div>
+    </section>
+    <section class="slots-section" data-section="inventory">
+      <h3 class="slots-heading">Inventory</h3>
+      <div class="slot-grid"></div>
+    </section>
+    <section class="slots-section" data-section="backpack">
+      <h3 class="slots-heading">Backpack</h3>
+      <div class="slot-grid"></div>
+    </section>
+  </dialog>
+
+  <!-- One card, cloned for each character -->
+  <template id="card-template">
+    <div class="card-unit">
+    <button type="button" class="char-card" role="option" aria-selected="false">
+      <span class="card-inner">
+        <span class="card-head">
+          <span class="card-title">
+            <span class="card-name"></span>
+            <span class="card-level"><span class="level-label">Lv</span><span class="level-value"></span></span>
+          </span>
+          <span class="card-stats">
+            <span class="card-hp"><span class="hp-label">HP</span><span class="hp-value"></span></span>
+            <span class="card-sign"></span>
+          </span>
+        </span>
+        <span class="card-art"></span>
+        <span class="card-abilities"></span>
+        <span class="card-foot"></span>
+      </span>
+    </button>
+    <!-- Layout mode: the character's backpack, to the right of the card -->
+    <div class="side-pack" aria-hidden="true">
+      <span class="side-pack-title">Backpack</span>
+      <span class="side-pack-grid"></span>
+    </div>
+    </div>
+  </template>
+
+  <script src="./birthsigns.js"></script>
+  <script src="./items.js"></script>
+  <script src="./characters.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

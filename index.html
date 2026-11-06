@@ -3,67 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Character Select</title>
+  <title>Coming soon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    /* Placeholder front page: the real one comes later */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #1d1b2e, #2d2440);
+      color: #f4efe6;
+      font-family: "Pixelify Sans", "Courier New", monospace;
+      text-align: center;
+      padding: 1rem;
+    }
+    h1 { font-size: clamp(1.8rem, 5vw, 3rem); text-shadow: 3px 3px 0 #000; }
+    p { margin-top: 0.75rem; color: rgba(244, 239, 230, 0.7); }
+  </style>
 </head>
 <body>
-  <main class="select-screen">
-    <h1 class="select-title">Choose your character</h1>
-
-    <!-- Cards are built from characters.js by app.js -->
-    <div class="card-grid" id="card-grid" role="listbox" aria-label="Characters"></div>
-
-    <p class="select-status" id="select-status" aria-live="polite">&nbsp;</p>
+  <main>
+    <h1>Coming soon</h1>
+    <p>Something is being built here.</p>
   </main>
-
-  <!-- Right-click (or long-press) a card: its equipment, inventory and backpack -->
-  <dialog class="slots-panel" id="slots-panel" aria-labelledby="slots-title">
-    <div class="slots-head">
-      <h2 class="slots-title" id="slots-title"></h2>
-      <button type="button" class="slots-close" id="slots-close" aria-label="Close">&times;</button>
-    </div>
-    <section class="slots-section" data-section="equipment">
-      <h3 class="slots-heading">Equipment</h3>
-      <div class="slot-grid slot-grid-4"></div>
-    </section>
-    <section class="slots-section" data-section="inventory">
-      <h3 class="slots-heading">Inventory</h3>
-      <div class="slot-grid"></div>
-    </section>
-    <section class="slots-section" data-section="backpack">
-      <h3 class="slots-heading">Backpack</h3>
-      <div class="slot-grid"></div>
-    </section>
-    <p class="slots-total"></p>
-  </dialog>
-
-  <!-- One card, cloned for each character -->
-  <template id="card-template">
-    <button type="button" class="char-card" role="option" aria-selected="false">
-      <span class="card-inner">
-        <span class="card-head">
-          <span class="card-title">
-            <span class="card-name"></span>
-            <span class="card-level"><span class="level-label">Lv</span><span class="level-value"></span></span>
-          </span>
-          <span class="card-stats">
-            <span class="card-hp"><span class="hp-label">HP</span><span class="hp-value"></span></span>
-            <span class="card-sign"></span>
-          </span>
-        </span>
-        <span class="card-art"></span>
-        <span class="card-abilities"></span>
-        <span class="card-foot"></span>
-      </span>
-    </button>
-  </template>
-
-  <script src="./birthsigns.js"></script>
-  <script src="./items.js"></script>
-  <script src="./characters.js"></script>
-  <script src="./app.js"></script>
 </body>
 </html>
