@@ -52,6 +52,14 @@
     return svg;
   }
 
+  /** "2026-11-06" -> "6 Nov 2026" (read as a calendar date, not shifted by time zone). */
+  function formatDate(isoDate) {
+    const [y, m, d] = String(isoDate).split("-").map(Number);
+    if (!y || !m || !d) return String(isoDate);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  }
+
   function findSign(id) {
     const signs = window.BIRTHSIGNS || [];
     return signs.find((s) => s.id === id) || signs[0];
@@ -65,9 +73,16 @@
     card.style.setProperty("--sign-color", sign.color);
     card.style.setProperty("--sign-shade", sign.shade);
     card.dataset.index = String(index);
-    card.setAttribute("aria-label", `${character.name}, ${sign.name}`);
+    card.setAttribute("aria-label", `${character.name}, ${character.hp} HP, ${sign.name}`);
 
     card.querySelector(".card-name").textContent = character.name;
+
+    const hpEl = card.querySelector(".card-hp");
+    if (character.hp != null) {
+      hpEl.querySelector(".hp-value").textContent = String(character.hp);
+    } else {
+      hpEl.hidden = true;
+    }
 
     // The sign is just a symbol; its name only appears on hover
     const signEl = card.querySelector(".card-sign");
@@ -79,6 +94,23 @@
       signEl.appendChild(icon);
     } else {
       signEl.appendChild(placeholderSignIcon());
+    }
+
+    // Bottom row: small info lines (only "created" for now; more can be added here)
+    const foot = card.querySelector(".card-foot");
+    const info = [];
+    if (character.created) info.push(["Created", formatDate(character.created)]);
+    for (const [label, value] of info) {
+      const line = document.createElement("span");
+      line.className = "foot-line";
+      const l = document.createElement("span");
+      l.className = "foot-label";
+      l.textContent = label;
+      const v = document.createElement("span");
+      v.className = "foot-value";
+      v.textContent = value;
+      line.append(l, v);
+      foot.appendChild(line);
     }
 
     const art = card.querySelector(".card-art");

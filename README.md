@@ -6,10 +6,11 @@ Game UI pieces, starting with the **character select screen**.
 
 Each character is shown as a trading card:
 
-- **Top:** the character's name, with their **birthsign** symbol in a badge at the top
-  right. The sign's name only appears when you hover over the badge.
+- **Top:** the character's name, their **HP**, and their **birthsign** symbol in a badge
+  at the top right. The sign's name only appears when you hover over the badge.
 - **Middle:** a square window for the character's art.
-- **Bottom:** an empty panel, kept as room for a description or stats.
+- **Bottom:** small info lines, starting with the date the character was created.
+  More info lines can be added later.
 
 The card's colours all come from the birthsign's colour.
 
@@ -21,7 +22,7 @@ Pick a card by clicking or tapping it, or with the arrow keys. The page fires a
 - `characters.js` lists the classes in the game's order:
 
   ```js
-  { name: "Rogue", birthsign: "sign-1", image: "art/classes/rogue.png" }
+  { name: "Rogue", birthsign: "sign-1", hp: 800, created: "2026-11-06", image: "art/classes/rogue.png" }
   ```
 
   `image` is the class sprite. Pixel art stays crisp at any size. Use `null` to show a
@@ -30,7 +31,8 @@ Pick a card by clicking or tapping it, or with the arrow keys. The page fires a
 - `birthsigns.js` holds the 8 birthsigns: `id`, `name`, `color`, `shade` and an optional
   `icon` image. Without an icon, the badge shows a small gem in the sign's colour.
 
-The birthsign names and the sign given to each class are placeholders for now.
+The birthsign names, the sign given to each class, the HP values and the created
+dates are placeholders for now.
 
 ## Running
 
