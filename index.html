@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Select</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="select-screen">
+    <h1 class="select-title">Choose your character</h1>
+
+    <!-- Cards are built from characters.js by app.js -->
+    <div class="card-grid" id="card-grid" role="listbox" aria-label="Characters"></div>
+
+    <p class="select-status" id="select-status" aria-live="polite">&nbsp;</p>
+  </main>
+
+  <!-- One card, cloned for each character -->
+  <template id="card-template">
+    <button type="button" class="char-card" role="option" aria-selected="false">
+      <span class="card-inner">
+        <span class="card-head">
+          <span class="card-name"></span>
+          <span class="card-sign" aria-hidden="true"></span>
+        </span>
+        <span class="card-art"></span>
+        <span class="card-foot"></span>
+      </span>
+    </button>
+  </template>
+
+  <script src="./zodiac.js"></script>
+  <script src="./characters.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

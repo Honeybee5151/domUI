@@ -1,0 +1,212 @@
+/* ==========================================================================
+   Character select — trading-card style cards
+   Each card's colours come from its birth sign's element (fire/earth/air/water).
+   ========================================================================== */
+
+:root {
+  --bg-top: #1d1b2e;
+  --bg-bottom: #2d2440;
+  --ink: #f4efe6;
+  --ink-dim: rgba(244, 239, 230, 0.7);
+  --card-w: clamp(150px, 20vw, 210px);
+  --font-pixel: "Pixelify Sans", "Courier New", monospace;
+}
+
+/* Element palettes: frame, frame shade, name bar, art window background, badge */
+.char-card[data-element="fire"] {
+  --frame: #e2603f; --frame-dark: #9c3324; --bar: #ffd7b8; --art: #ffb27f; --badge: #c2412b;
+}
+.char-card[data-element="earth"] {
+  --frame: #7fae4e; --frame-dark: #4b6e2c; --bar: #e3efc8; --art: #b9d58c; --badge: #5c8636;
+}
+.char-card[data-element="air"] {
+  --frame: #b7a6ea; --frame-dark: #6f5fb3; --bar: #ece6ff; --art: #d3c8fb; --badge: #7f6dc6;
+}
+.char-card[data-element="water"] {
+  --frame: #4fa3d9; --frame-dark: #276d9e; --bar: #d4ecfb; --art: #94cdef; --badge: #2f7fb7;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  color: var(--ink);
+  font-family: var(--font-pixel);
+}
+
+.select-screen {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vh, 3.5rem) 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.25rem, 3vh, 2rem);
+}
+
+.select-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 3px 3px 0 #000;
+}
+
+/* Wrapping rows, each centred (so a short last row sits in the middle too) */
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  width: 100%;
+}
+
+.select-status {
+  min-height: 1.5em;
+  font-size: 1.15rem;
+  color: var(--ink-dim);
+}
+
+/* --------------------------------------------------------------------------
+   The card: standard trading-card proportions (63 x 88)
+   -------------------------------------------------------------------------- */
+
+.char-card {
+  width: var(--card-w);
+  aspect-ratio: 63 / 88;
+  padding: 7px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--frame);
+  box-shadow: inset 0 0 0 3px var(--frame-dark), 0 6px 0 #0006;
+  font: inherit;
+  color: #1e1a17;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.card-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 7px;
+  background: var(--frame-dark);
+}
+
+/* Top: name bar with the birth sign badge in the top-right */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 4px 3px 8px;
+  border-radius: 5px;
+  background: var(--bar);
+}
+
+.card-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.72rem, 1.05vw, 0.92rem);
+  font-weight: 700;
+  text-align: left;
+}
+
+.card-sign {
+  flex-shrink: 0;
+  width: 1.75em;
+  height: 1.75em;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--badge);
+  box-shadow: inset 0 0 0 2px #0003;
+  color: #fff;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols", "DejaVu Sans", sans-serif;
+  font-size: clamp(0.8rem, 1.1vw, 0.95rem);
+  line-height: 1;
+}
+
+/* Middle: square art window */
+.card-art {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  overflow: hidden;
+  border: 3px solid var(--bar);
+  border-radius: 4px;
+  background: var(--art);
+  display: grid;
+  place-items: center;
+}
+
+.card-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.art-placeholder {
+  width: 62%;
+  height: 62%;
+  fill: var(--frame-dark);
+  opacity: 0.55;
+  shape-rendering: crispEdges;
+}
+
+/* Bottom: the sign's name (room for stats later) */
+.card-foot {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bar) 85%, transparent);
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   Hover / focus / selected
+   -------------------------------------------------------------------------- */
+
+.char-card:hover {
+  transform: translateY(-4px);
+}
+
+.char-card:focus-visible {
+  outline: 3px dashed var(--ink);
+  outline-offset: 5px;
+}
+
+.char-card.is-selected {
+  transform: translateY(-8px) scale(1.04);
+  box-shadow: inset 0 0 0 3px var(--frame-dark), 0 0 0 4px #fff, 0 0 22px 6px var(--frame), 0 10px 0 #0006;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char-card {
+    transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --card-w: calc((100vw - 2rem - 0.9rem) / 2);
+  }
+
+  .card-name {
+    font-size: 0.72rem;
+  }
+}
