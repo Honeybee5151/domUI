@@ -39,6 +39,55 @@ body {
 }
 
 /* The whole screen is the card grid, with a slim toolbar on top */
+/* --------------------------------------------------------------------------
+   Ambient background: the top card's screenshot, blown up and blurred so its
+   colours fill the whole screen. Two layers so one can fade into the next.
+   -------------------------------------------------------------------------- */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient-layer {
+  position: absolute;
+  inset: -12%;
+  background-color: var(--amb-color, transparent);
+  background-position: center;
+  background-size: cover;
+  filter: blur(48px) saturate(1.35) brightness(0.5);
+  transform: scale(1.1);
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+.ambient-layer.is-on {
+  opacity: 1;
+}
+
+/* Darken towards the edges and the top so the toolbar and text stay readable */
+.ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 30%, #0d0b1499 100%),
+    linear-gradient(180deg, #0d0b1480, transparent 30%);
+}
+
+/* Vault and New character keep the plain background */
+body.in-vault .ambient,
+body.in-create .ambient {
+  opacity: 0;
+}
+
+.ambient {
+  transition: opacity 400ms ease;
+}
+
 .select-screen {
   min-height: 100vh;
   /* hidden hover labels near the right edge must not make the page scroll sideways */
@@ -295,17 +344,18 @@ body {
 
 .card-grid.is-deck {
   --card-w: clamp(220px, 26vw, 280px);
+  flex: 1;
   position: relative;
   display: block;
   /* room for the top card plus the fanned layers under it */
   min-height: calc(var(--card-w) * 88 / 63 + 40px);
 }
 
-/* All cards sit on the same spot in the top-left; app.js fans each layer a little */
+/* All cards sit on the same spot in the middle; app.js fans each layer a little */
 .card-grid.is-deck .card-unit {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: calc(50% - var(--card-w) / 2);
+  top: calc(50% - var(--card-w) * 44 / 63 - 20px);
   pointer-events: none;
 }
 

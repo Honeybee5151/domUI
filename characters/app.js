@@ -280,12 +280,32 @@
     units.forEach((u) => grid.appendChild(u));
 
     let selected = -1;
+
+    // ---- Ambient background: the featured card's screenshot, blurred across the screen ----
+    const ambientLayers = [...document.querySelectorAll(".ambient-layer")];
+    let ambientFront = 0;
+    let ambientKey = null;
+    function setAmbient(index) {
+      const c = characters[index];
+      if (!c || !ambientLayers.length) return;
+      const key = c.screenshot || c.birthsign;
+      if (key === ambientKey) return;
+      ambientKey = key;
+      const sign = findSign(c.birthsign);
+      // Fill the hidden layer, then fade it in over the current one
+      ambientFront = 1 - ambientFront;
+      const layer = ambientLayers[ambientFront];
+      layer.style.backgroundImage = c.screenshot ? `url("${c.screenshot}")` : "none";
+      layer.style.setProperty("--amb-color", c.screenshot ? "transparent" : sign.color);
+      ambientLayers.forEach((l, i) => l.classList.toggle("is-on", i === ambientFront));
+    }
     const isShown = (i) => !units[i].hidden;
     // Visible cards in on-screen order
     const shownIndexes = () => [...grid.children].map((u) => Number(u.querySelector(".char-card").dataset.index)).filter(isShown);
 
     function markSelected(index) {
       selected = index;
+      setAmbient(index);
       cards.forEach((card, i) => {
         card.classList.toggle("is-selected", i === index);
         card.setAttribute("aria-selected", String(i === index));
@@ -295,6 +315,7 @@
     function select(index, { scroll = true } = {}) {
       if (index < 0 || index >= cards.length) return;
       selected = index;
+      setAmbient(index);
       cards.forEach((card, i) => {
         const on = i === index;
         card.classList.toggle("is-selected", on);
@@ -507,6 +528,7 @@
         u.querySelector(".card-back").setAttribute("aria-hidden", String(toDeck));
       });
       deckView = toDeck;
+      if (toDeck && order.length) setAmbient(order[0]);
       // Laid out, every card shows its front (its back is beside it)
       if (!toDeck) {
         cards.forEach((card) => {
@@ -995,6 +1017,7 @@
       createOn = on;
       createBtn.setAttribute("aria-pressed", String(on));
       createScreen.hidden = !on;
+      document.body.classList.toggle("in-create", on);
       if (on) {
         if (vaultOn) setVault(false);
         grid.hidden = true;
@@ -1074,6 +1097,7 @@
     arrange(true);
     if (characters.length) {
       const recent = byRecency()[0];
+      setAmbient(recent);
       cards[recent].classList.add("is-selected");
       cards[recent].setAttribute("aria-selected", "true");
       selected = recent;
