@@ -8,9 +8,10 @@ Each character is shown as a trading card:
 
 - **Top:** the character's name, their **HP**, and their **birthsign** symbol in a badge
   at the top right. The sign's name only appears when you hover over the badge.
-- **Picture:** a wide picture box in trading-card proportions, about 55 × 40 mm on a
-  63 × 88 mm card.
-- **Abilities:** each ability's name and a short description, under the picture.
+- **Picture:** a wide 3:2 picture box taking about 43% of the card's height, the same
+  proportions as a standard 63 × 88 mm trading card.
+- **Abilities:** each ability with a small "Ability" tag, its name and a short
+  description, under the picture.
 - **Bottom:** a small info row, starting with the date the character was created.
   More info lines can be added later.
 

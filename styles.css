@@ -77,7 +77,7 @@ body {
 .char-card {
   width: var(--card-w);
   aspect-ratio: 63 / 88;
-  padding: 7px;
+  padding: 5px;
   border: 0;
   border-radius: 12px;
   background: var(--frame);
@@ -92,9 +92,9 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px;
-  border-radius: 7px;
+  gap: 5px;
+  padding: 4px;
+  border-radius: 8px;
   background: var(--frame-dark);
 }
 
@@ -204,15 +204,16 @@ body {
 }
 
 /* Middle: square art window */
-/* Picture box in trading-card proportions: about 55 x 40 mm on a 63 x 88 mm card */
+/* Picture box: 3:2, about 43% of the card's height and nearly its full width
+   (proportions taken from a standard trading card's layout) */
 .card-art {
-  aspect-ratio: 11 / 8;
+  aspect-ratio: 3 / 2;
   width: 100%;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  border: 3px solid var(--bar);
-  border-radius: 4px;
+  border: 2px solid var(--bar);
+  border-radius: 3px;
   background: var(--art);
   display: grid;
   place-items: center;
@@ -250,7 +251,37 @@ body {
   text-align: left;
 }
 
+.ability {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ability-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ability-tag {
+  flex-shrink: 0;
+  padding: 1px 5px 0;
+  border-radius: 2px;
+  background: var(--badge);
+  color: #fff;
+  font-size: clamp(0.46rem, 0.6vw, 0.54rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
 .ability-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: clamp(0.66rem, 0.9vw, 0.8rem);
   font-weight: 700;
   line-height: 1.15;

@@ -101,16 +101,19 @@
     for (const ability of character.abilities || []) {
       const block = document.createElement("span");
       block.className = "ability";
+      const head = document.createElement("span");
+      head.className = "ability-head";
+      const tag = document.createElement("span");
+      tag.className = "ability-tag";
+      tag.textContent = "Ability";
       const n = document.createElement("span");
       n.className = "ability-name";
       n.textContent = ability.name;
+      head.append(tag, n);
       const t = document.createElement("span");
       t.className = "ability-text";
       t.textContent = ability.text;
-      block.append(n, t);
-      block.style.display = "flex";
-      block.style.flexDirection = "column";
-      block.style.gap = "1px";
+      block.append(head, t);
       abilitiesEl.appendChild(block);
     }
 
