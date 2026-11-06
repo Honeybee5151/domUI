@@ -141,7 +141,7 @@ body {
 .card-hp {
   display: flex;
   align-items: baseline;
-  gap: 1px;
+  gap: 2px;
   font-weight: 700;
   line-height: 1;
 }
@@ -556,10 +556,6 @@ body {
     font-size: 0.5rem;
   }
 
-  .hp-label {
-    display: none;
-  }
-
   .hp-value {
     font-size: 0.7rem;
   }
@@ -570,7 +566,7 @@ body {
 }
 
 /* Very small screens: one card per row */
-@media (max-width: 340px) {
+@media (max-width: 359px) {
   :root {
     --card-w: min(240px, calc(100vw - 2rem));
   }
