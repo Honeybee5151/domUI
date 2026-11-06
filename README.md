@@ -15,7 +15,7 @@ Each character is shown as a trading card:
 
 - **Top:** the character's name and **level**, their **HP**, and their **birthsign** symbol in a badge
   at the top right. The sign's name only appears when you hover over the badge.
-- **Picture:** a wide 3:2 picture box taking about 43% of the card's height, the same
+- **Picture:** the player's in-game **screenshot** of that character, in a wide 3:2 picture box taking about 43% of the card's height, the same
   proportions as a standard 63 × 88 mm trading card.
 - **Abilities:** each ability with a small "Ability" tag, its name and a short
   description, under the picture.
@@ -46,6 +46,14 @@ item's name. Esc, the close button or a click outside closes it. The page fires 
   of the card. Each class's sprite is set once in `CLASS_IMAGES`, for example
   `rogue: "art/classes/rogue.png"`, with files under `characters/art/`. Pixel art stays
   crisp at any size. `null` shows a placeholder silhouette.
+
+- **Screenshots:** each character's `screenshot` is the in-game screenshot the player
+  took for that card, shown edge to edge in the picture box. Its `screenshotCaption`
+  appears when you hover the picture. Until players take real ones, every character
+  has a generated placeholder scene in `characters/art/screenshots/`. These are made
+  by `tools/make_placeholder_screenshots.py` and show the character fighting, finding
+  loot, resting or exploring somewhere. If a character has no screenshot, the card
+  shows its class sprite instead.
 
 - `characters/items.js` sets the slot counts and the equipment slot names (Weapon, Ability, Armor,
   Ring), and holds the placeholder items. Each character has

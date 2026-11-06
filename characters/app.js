@@ -4,7 +4,7 @@
  *   double-click / -tap    play (enter the world) — fires a "characterplay" event
  *   right-click / hold     flip the card to its back (equipment, inventory, backpack)
  *                          and right-click again to flip it back
- *   On open only the most recently played character is shown. To see the others:
+ *   On open the cards are a deck, the most recently played on top. To see the others:
  *   search box             in the deck: brings the best match to the top (Enter plays it);
  *                          laid out: narrows the cards down ("/" to focus, Esc to clear)
  *   Layout button          lay out every character, with the back of its card (equipment,
@@ -203,7 +203,16 @@
 
     const art = card.querySelector(".card-art");
     const imageSrc = character.image || (window.CLASS_IMAGES || {})[String(character.class).toLowerCase()];
-    if (imageSrc) {
+    if (character.screenshot) {
+      // The player's screenshot fills the whole picture box
+      const shot = document.createElement("img");
+      shot.src = character.screenshot;
+      shot.alt = character.screenshotCaption || `${character.name} in game`;
+      shot.className = "art-screenshot";
+      shot.loading = "lazy";
+      if (character.screenshotCaption) art.dataset.caption = character.screenshotCaption;
+      art.appendChild(shot);
+    } else if (imageSrc) {
       const img = document.createElement("img");
       img.src = imageSrc;
       img.alt = character.name;
@@ -361,9 +370,7 @@
     const search = document.getElementById("search");
     const countEl = document.getElementById("result-count");
     const noResults = document.getElementById("no-results");
-    const hint = document.getElementById("view-hint");
     const layoutBtn = document.getElementById("layout-toggle");
-    hint.querySelector(".hint-count").textContent = String(characters.length);
 
     // Which character was played last: saved in this browser when you play, otherwise
     // taken from each character's lastPlayed
@@ -482,12 +489,11 @@
         });
       }
       layoutBtn.setAttribute("aria-pressed", String(!toDeck));
-      hint.hidden = !toDeck;
       const q = search.value.trim();
       if (toDeck) {
         const top = order[0];
         const hit = q && matchScore(top, q0) > 0;
-        countEl.textContent = !q ? "Last played" : hit ? `Best match: ${characters[top].name}` : "No match";
+        countEl.textContent = !q ? "" : hit ? `Best match: ${characters[top].name}` : "No match";
       } else {
         countEl.textContent = q ? `${shown} of ${characters.length}` : `${characters.length} characters`;
       }

@@ -12,7 +12,9 @@
  *   abilities  - list of { name, text } shown in the ability section under the picture
  *   equipment, inventory, backpack - item slots shown on right-click (see items.js);
  *                backpack: null means the character has no backpack
- *   image      - path to the character's sprite, or null to use the class's sprite from
+ *   screenshot - path to the in-game screenshot the player took for this card; shown in
+ *                the picture box (screenshotCaption shows when hovering it)
+ *   image      - used when there is no screenshot: the character's sprite, or null for the class's sprite from
  *                CLASS_IMAGES below (or a placeholder silhouette if that is null too)
  *
  * Everything below is PLACEHOLDER data (names, birthsigns, levels, HP, dates, abilities
@@ -111,6 +113,9 @@ window.CHARACTERS = ROSTER.map(([name, cls, birthsign, level, hp, created, hasBa
   hp,
   created,
   lastPlayed: LAST_PLAYED[name] || created,
+  // The player's in-game screenshot for this character's card (placeholder scenes for now)
+  screenshot: `art/screenshots/${name.toLowerCase()}.png`,
+  screenshotCaption: (window.SCREENSHOT_CAPTIONS || {})[name] || "",
   abilities: PLACEHOLDER_ABILITIES,
   ...LOADOUTS[KIT[cls]],
   backpack: hasBackpack ? BACKPACK : null,
