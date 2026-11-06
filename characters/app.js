@@ -257,7 +257,10 @@
       }
       fillSlots(gridEl, character[list], size, labels);
       if (index != null) {
-        [...gridEl.children].forEach((slot, pos) => (slot.dataset.ref = `c:${index}:${list}:${pos}`));
+        [...gridEl.children].forEach((slot, pos) => {
+          slot.dataset.ref = `c:${index}:${list}:${pos}`;
+          if (slot.classList.contains("has-item")) slot.draggable = true;
+        });
       }
     }
   }
@@ -303,6 +306,19 @@
     // Visible cards in on-screen order
     const shownIndexes = () => [...grid.children].map((u) => Number(u.querySelector(".char-card").dataset.index)).filter(isShown);
 
+    /**
+     * A "last played" time newer than every character's, in local time, so the character
+     * it's given to always lands on top of the deck (even if some saved times are later
+     * today or use a different format).
+     */
+    function newestStamp() {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      const now = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      const latest = characters.reduce((m, c) => ((c.lastPlayed || "") > m ? c.lastPlayed : m), "");
+      return now > latest ? now : `${latest}.1`;
+    }
+
     function markSelected(index) {
       selected = index;
       setAmbient(index);
@@ -337,9 +353,7 @@
       playing = true;
       select(index, { scroll: false });
       // This character is now the most recently played
-      const now = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      c.lastPlayed = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      c.lastPlayed = newestStamp();
       savePlayed(c.name, c.lastPlayed);
       const sign = findSign(c.birthsign);
       overlay.style.setProperty("--sign-color", sign.color);
@@ -751,21 +765,41 @@
       box.querySelector(".chest-title").textContent = `Chest ${ci + 1}`;
       const grid8 = box.querySelector(".chest-grid");
       fillSlots(grid8, items, window.SLOT_COUNTS.chest);
-      [...grid8.children].forEach((slot, pos) => (slot.dataset.ref = `v:${ci}:${pos}`));
+      [...grid8.children].forEach((slot, pos) => {
+        slot.dataset.ref = `v:${ci}:${pos}`;
+        if (slot.classList.contains("has-item")) slot.draggable = true;
+      });
       return box;
     }
 
+    const vaultBoxes = new Map(); // character index -> its card back in the vault
+    const vaultNone = document.createElement("p");
+    vaultNone.className = "vault-none";
+    vaultNone.textContent = "No characters match your search.";
+    let chestsBuilt = false;
+
+    /** Show the vault: card backs are built once, then only reordered / shown / hidden. */
     function renderVault() {
       const q = search.value.trim().toLowerCase();
-      const order = byRecency().filter((i) => !q || matchesSearch(i));
-      vaultChars.replaceChildren(...order.map(renderVaultChar));
-      if (!order.length) {
-        const none = document.createElement("p");
-        none.className = "vault-none";
-        none.textContent = "No characters match your search.";
-        vaultChars.appendChild(none);
+      const order = byRecency();
+      let shown = 0;
+      order.forEach((i) => {
+        let box = vaultBoxes.get(i);
+        if (!box) {
+          box = renderVaultChar(i);
+          vaultBoxes.set(i, box);
+        }
+        const match = !q || matchesSearch(i);
+        box.hidden = !match;
+        if (match) shown++;
+        vaultChars.appendChild(box); // moves it into recency order
+      });
+      vaultNone.hidden = shown > 0;
+      vaultChars.appendChild(vaultNone);
+      if (!chestsBuilt) {
+        vaultChests.replaceChildren(...chests.map((_, ci) => renderChest(ci)));
+        chestsBuilt = true;
       }
-      vaultChests.replaceChildren(...chests.map((_, ci) => renderChest(ci)));
       countEl.textContent = "";
       markHeld();
     }
@@ -798,28 +832,119 @@
       document.dispatchEvent(new CustomEvent("itemmoved", { detail: { from, to, item, swapped: a.list[a.pos] } }));
     }
 
+    // Cards flying between modes: a copy of the old face flies the first half of the way
+    // while turning edge-on, then the new face finishes the trip turning back into view
+    const fxLayer = document.createElement("div");
+    fxLayer.className = "fx-layer";
+    document.body.appendChild(fxLayer);
+    const rectOf = (el) => el.getBoundingClientRect();
+    const inView = (r) => r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && r.width > 0;
+
+    function flyFlip(fromEl, fromRect, toEl, toRect, delay, duration = 560) {
+      const half = duration / 2;
+      const mid = {
+        x: (fromRect.left + fromRect.width / 2 + toRect.left + toRect.width / 2) / 2,
+        y: (fromRect.top + fromRect.height / 2 + toRect.top + toRect.height / 2) / 2 - 30,
+        w: (fromRect.width + toRect.width) / 2
+      };
+      // first half: a copy of the old face
+      const ghost = fromEl.cloneNode(true);
+      ghost.classList.add("fx-ghost");
+      ghost.classList.remove("is-selected", "is-flipped");
+      // sizes inside the card follow its width
+      ghost.style.setProperty("--card-w", `${fromRect.width}px`);
+      ghost.style.setProperty("--back-w", `${fromRect.width}px`);
+      Object.assign(ghost.style, {
+        left: `${fromRect.left}px`, top: `${fromRect.top}px`,
+        width: `${fromRect.width}px`, height: `${fromRect.height}px`
+      });
+      fxLayer.appendChild(ghost);
+      const gx = mid.x - (fromRect.left + fromRect.width / 2);
+      const gy = mid.y - (fromRect.top + fromRect.height / 2);
+      ghost.animate(
+        [
+          { transform: "perspective(900px) translate(0, 0) scale(1) rotateY(0deg)" },
+          { transform: `perspective(900px) translate(${gx}px, ${gy}px) scale(${mid.w / fromRect.width}) rotateY(90deg)` }
+        ],
+        { duration: half, delay, easing: "cubic-bezier(.45,0,.9,.6)", fill: "both" }
+      ).finished.then(() => ghost.remove(), () => ghost.remove());
+      // second half: the new face, starting edge-on at the midpoint
+      const tx = mid.x - (toRect.left + toRect.width / 2);
+      const ty = mid.y - (toRect.top + toRect.height / 2);
+      toEl.animate(
+        [
+          { transform: `perspective(900px) translate(${tx}px, ${ty}px) scale(${mid.w / toRect.width}) rotateY(-90deg)` },
+          { transform: "perspective(900px) translate(0, 0) scale(1) rotateY(0deg)" }
+        ],
+        { duration: half, delay: delay + half, easing: "cubic-bezier(.1,.4,.55,1)", fill: "backwards" }
+      );
+    }
+
+    /** Fronts of the cards as they are on screen now, keyed by character index. */
+    function frontRects() {
+      const out = new Map();
+      cards.forEach((card, i) => {
+        if (units[i].hidden) return;
+        const r = rectOf(card);
+        if (r.width) out.set(i, { el: card, r });
+      });
+      return out;
+    }
+
     function setVault(on) {
       vaultOn = on;
       held = null;
       vaultBtn.setAttribute("aria-pressed", String(on));
-      vaultScreen.hidden = !on;
-      grid.hidden = on;
       noResults.hidden = true;
       document.body.classList.toggle("in-vault", on);
       if (on) {
+        // Where the card fronts are before the switch
+        const fronts = reduceMotion ? null : frontRects();
+        vaultScreen.hidden = false;
+        grid.hidden = true;
         renderVault();
-        // Card backs flip into view one after another; the chests slide in from the right
-        staggerIn([...vaultChars.children], [
-          { transform: "perspective(700px) rotateY(-90deg)", opacity: 0 },
-          { transform: "perspective(700px) rotateY(0deg)", opacity: 1 }
-        ]);
+        if (fronts) {
+          // Each card flies to its place in the vault, turning over to show its back
+          let n = 0;
+          byRecency().forEach((i) => {
+            const box = vaultBoxes.get(i);
+            const from = fronts.get(i);
+            if (!box || box.hidden || !from) return;
+            const to = rectOf(box);
+            if (!inView(to)) return;
+            flyFlip(from.el, from.r, box, to, Math.min(n++ * 35, 520));
+          });
+        }
+        // The chests slide in from the right
         staggerIn([...vaultChests.children], [
-          { transform: "translateX(40px)", opacity: 0 },
+          { transform: "translateX(60px)", opacity: 0 },
           { transform: "none", opacity: 1 }
-        ], { step: 30 });
+        ], { step: 30, duration: 420 });
       } else {
+        // Where the card backs are before the switch
+        const backs = new Map();
+        if (!reduceMotion) {
+          vaultBoxes.forEach((box, i) => {
+            if (box.hidden) return;
+            const r = rectOf(box);
+            if (inView(r)) backs.set(i, { el: box, r });
+          });
+        }
+        vaultScreen.hidden = true;
+        grid.hidden = false;
         arrange(deckView);
-        if (deckView) popTopCard();
+        // Each back flies back to its card in the deck or the rows, turning to its front
+        let n = 0;
+        const order = deckView ? deckOrder() : byRecency();
+        order.forEach((i, rank) => {
+          const from = backs.get(i);
+          if (!from || units[i].hidden) return;
+          if (deckView && rank > 8) return; // only the top of the deck is visible
+          const to = rectOf(cards[i]);
+          if (!inView(to)) return;
+          flyFlip(from.el, from.r, cards[i], to, Math.min(n++ * 35, 520));
+        });
+        if (deckView && !backs.size) popTopCard();
       }
     }
 
@@ -861,15 +986,21 @@
       slot.classList.add("is-dragging");
     });
     vaultScreen.addEventListener("dragend", () => {
-      vaultScreen.querySelectorAll(".is-dragging, .is-drop").forEach((el) => el.classList.remove("is-dragging", "is-drop"));
+      vaultScreen.querySelector(".is-dragging")?.classList.remove("is-dragging");
+      dropSlot?.classList.remove("is-drop");
+      dropSlot = null;
     });
+    let dropSlot = null;
     vaultScreen.addEventListener("dragover", (e) => {
       const slot = e.target.closest(".slot[data-ref]");
       if (!slot) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
-      vaultScreen.querySelectorAll(".is-drop").forEach((el) => el !== slot && el.classList.remove("is-drop"));
-      slot.classList.add("is-drop");
+      if (slot !== dropSlot) {
+        dropSlot?.classList.remove("is-drop");
+        dropSlot = slot;
+        slot.classList.add("is-drop");
+      }
     });
     vaultScreen.addEventListener("drop", (e) => {
       const slot = e.target.closest(".slot[data-ref]");
@@ -878,11 +1009,6 @@
       const from = e.dataTransfer.getData("text/plain");
       if (from) moveItem(from, slot.dataset.ref);
     });
-    // Items can be dragged in Vault mode
-    new MutationObserver(() => {
-      vaultScreen.querySelectorAll(".slot.has-item:not([draggable])").forEach((s) => (s.draggable = true));
-      vaultScreen.querySelectorAll(".slot:not(.has-item)[draggable]").forEach((s) => s.removeAttribute("draggable"));
-    }).observe(vaultScreen, { childList: true, subtree: true });
 
     // ---- New character: class slider, name and birthsign ----
     const createBtn = document.getElementById("create-toggle");
@@ -1081,7 +1207,7 @@
         return;
       }
       const c = newCharacter(classList[classPos], name, signId);
-      c.lastPlayed = new Date().toISOString().slice(0, 19); // newest goes on top of the deck
+      c.lastPlayed = newestStamp(); // a new character goes on top of the deck
       const index = characters.length;
       characters.push(c);
       const unit = buildCard(template, c, index);
@@ -1091,6 +1217,7 @@
       // The game listens for this to save the new character
       document.dispatchEvent(new CustomEvent("charactercreated", { detail: { index, character: c } }));
       nameInput.value = "";
+      search.value = "";
       setCreate(false);
       select(index, { scroll: false });
     });

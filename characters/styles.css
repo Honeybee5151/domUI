@@ -52,14 +52,18 @@ body {
   pointer-events: none;
 }
 
+/* Drawn small and scaled up: the same soft look for a fraction of the blur work */
 .ambient-layer {
   position: absolute;
-  inset: -12%;
+  left: 50%;
+  top: 50%;
+  width: 34vw;
+  height: 34vh;
   background-color: var(--amb-color, transparent);
   background-position: center;
   background-size: cover;
-  filter: blur(48px) saturate(1.35) brightness(0.5);
-  transform: scale(1.1);
+  filter: blur(14px) saturate(1.35) brightness(0.5);
+  transform: translate(-50%, -50%) scale(3.6);
   opacity: 0;
   transition: opacity 700ms ease;
 }
@@ -79,9 +83,12 @@ body {
 }
 
 /* Vault and New character keep the plain background */
+/* Vault and New character keep the plain background; hidden once faded so it costs nothing */
 body.in-vault .ambient,
 body.in-create .ambient {
   opacity: 0;
+  visibility: hidden;
+  transition: opacity 400ms ease, visibility 0s 400ms;
 }
 
 .ambient {
@@ -861,6 +868,11 @@ body.in-create .ambient {
   align-content: flex-start;
 }
 
+.vault-char[hidden],
+.vault-none[hidden] {
+  display: none;
+}
+
 .vault-char {
   width: var(--back-w);
   aspect-ratio: 63 / 88;
@@ -1224,6 +1236,34 @@ body.in-create .ambient {
   .class-slide {
     transition: none;
   }
+}
+
+/* Cards flying between modes */
+.fx-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.fx-ghost {
+  position: fixed;
+  margin: 0;
+  transform-origin: center;
+  backface-visibility: hidden;
+  --slot: calc((var(--back-w) - 10px - 14px - 3 * 4px) / 4 * 0.9);
+}
+
+.fx-ghost .slot {
+  width: var(--slot);
+  height: var(--slot);
+  border-radius: 4px;
+}
+
+/* The arriving face starts edge-on, so it is invisible until it turns into view */
+.vault-char,
+.char-card {
+  backface-visibility: hidden;
 }
 
 /* --------------------------------------------------------------------------
