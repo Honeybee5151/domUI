@@ -215,12 +215,28 @@ body {
 }
 
 .back-name {
-  font-size: clamp(0.66rem, 0.9vw, 0.8rem);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  /* clearly readable on the dark back: light text, the sign colour as a small bar */
+  color: var(--ink);
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
   font-weight: 700;
-  color: color-mix(in srgb, var(--sign-color) 55%, var(--ink));
+  line-height: 1.2;
+  text-shadow: 0 1px 0 #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.back-name::before {
+  content: "";
+  flex-shrink: 0;
+  width: 4px;
+  height: 1em;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--sign-color) 80%, #fff);
 }
 
 .back-section {
