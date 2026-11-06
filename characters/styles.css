@@ -121,19 +121,7 @@ body {
   filter: invert(1) opacity(0.5);
 }
 
-.search-hint {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #ffffff14;
-  color: var(--ink-dim);
-  font: inherit;
-  font-size: 0.75rem;
-}
 
-.search:focus-within .search-hint {
-  display: none;
-}
 
 .result-count {
   color: var(--ink-dim);
@@ -938,9 +926,6 @@ body {
     font-size: 0.78rem;
   }
 
-  .search-hint {
-    display: none;
-  }
 }
 
 /* Phones in Layout mode: one card and its back per row, filling the width */
